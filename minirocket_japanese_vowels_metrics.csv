@@ -1,0 +1,2 @@
+Dataset,Seed,Total Training Time,Inference Time,Accuracy,Weighted F1
+JapaneseVowels,42,1.2842403239992564,0.4856075960015005,0.9945945945945946,0.9945988458974164
