@@ -28,11 +28,28 @@ stats = []
 start = timer()
 pipeline = make_pipeline(
     MiniRocketMultivariateVariable(
+        # The minimum length of the series in the dataset is 7, 
+        # and minirocket requires a minimum length of 9 to extract features without padding. 
+        # Therefore, we set pad_value_short_series to -10.0 to 
+        # ensure that the padding does not interfere with the feature extraction.
         pad_value_short_series=-10.0,
+        
+        # Random seed for reproducibility. 
+        # Ensures the same random kernels are generated each time
         random_state=seed,
+
+        # The maximum number of dilations per kernel.
+        # Controls how many times each kernel is applied at different scales 
         max_dilations_per_kernel=16
     ),
+    
+    # After MiniRocket transformation, data may be sparse (many zeros)
+    # StandardScaler with_mean=False is used to scale the features without centering,
+    # which is important for sparse data to avoid introducing negative values.
     StandardScaler(with_mean=False),
+
+    # Regularization parameters to test via cross-validation. Creates 10 values from 10^-3 to 10^3
+    # on log scale: [0.001, 0.0046, 0.0215, 0.1, 0.464, 2.15, 10, 46.4, 215, 1000]
     RidgeClassifierCV(alphas=np.logspace(-3, 3, 10))
 )
 pipeline.fit(X_train, y_train)
@@ -70,7 +87,7 @@ stats_df = pd.DataFrame(
     ]
 )
 
-stats_df.to_csv("minirocket_japanese_vowels_metrics.csv", index=False)
+#stats_df.to_csv("minirocket_japanese_vowels_metrics.csv", index=False)
 
 print("\nMetrics:")
 print(stats_df)
