@@ -5,9 +5,9 @@ Model: MiniROCKET
   Accuracy       : 0.9855
   Macro F1       : 0.9930
   Weighted F1    : 0.9855
-  Train time     : 17.89 s
-  Infer time     : 0.199 s total
-  Infer per sample: 0.724 ms
+  Train time     : 1.95 s
+  Infer time     : 0.211 s total
+  Infer per sample: 0.769 ms
   Per-class F1:
     Label  0: 0.9623
     Label  1: 0.9783
@@ -29,9 +29,9 @@ Model: DTW-1NN
   Accuracy       : 0.9818
   Macro F1       : 0.9058
   Weighted F1    : 0.9848
-  Train time     : 0.06 s
-  Infer time     : 13.255 s total
-  Infer per sample: 48.199 ms
+  Train time     : 0.05 s
+  Infer time     : 11.249 s total
+  Infer per sample: 40.906 ms
   Per-class F1:
     Label  0: 0.9811
     Label  1: 0.9574
