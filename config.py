@@ -6,8 +6,9 @@ Edit this file to adapt the pipeline to different environments or experiments.
 import os
 
 # --- Paths ---
-DATA_DIR = "DescDatasetsFaults"           # Directory containing all CSV files
-OUTPUT_DIR = "results"          # Directory for saving metrics and plots
+PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+DATA_DIR = os.path.join(PROJECT_ROOT, "data", "raw")      # Directory containing all CSV files
+OUTPUT_DIR = os.path.join(PROJECT_ROOT, "results")        # Directory for saving metrics and plots
 
 # --- Sampling ---
 TARGET_HZ = 64                  # Unified resampling frequency (Hz)

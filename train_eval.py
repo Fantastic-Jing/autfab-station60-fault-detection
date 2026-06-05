@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 
 def build_minirocket(n_jobs: int = -1) -> MiniRocketClassifier:
     return MiniRocketClassifier(
-        num_kernels=10_000,
+        n_kernels=10_000,
         random_state=RANDOM_SEED,
         n_jobs=n_jobs,
     )

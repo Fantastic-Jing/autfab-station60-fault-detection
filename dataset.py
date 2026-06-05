@@ -3,8 +3,8 @@ Dataset assembly:
   - Scans DATA_DIR for CSV files and assigns each file to train or test split
     based on TEST_FILE_MARKERS in config.py.
   - Processes all files through the preprocessing pipeline.
-  - Fits a per-channel min-max scaler on the training set only, then applies
-    the same transform to the test set.
+  - Fits a per-channel standard scaler (z-score normalization) on the training set only,
+    then applies the same transform to the test set.
 """
 
 import os
@@ -54,33 +54,35 @@ def split_files(data_dir: str) -> tuple[list[str], list[str]]:
 
 
 # ---------------------------------------------------------------------------
-# Normalization (min-max, per channel)
+# Normalization (z-score per channel)
 # ---------------------------------------------------------------------------
 
-class ChannelMinMaxScaler:
+class ChannelStandardScaler:
     """
-    Per-channel min-max scaler for 3-D arrays (n_samples, n_channels, n_timesteps).
+    Per-channel standard scaler (z-score normalization) for 3-D arrays.
     fit() is called on training data; transform() is applied to both splits.
+    Handles constant channels and very small standard deviations.
     """
 
     def __init__(self):
-        self.ch_min: np.ndarray | None = None   # shape (n_channels,)
-        self.ch_max: np.ndarray | None = None
+        self.ch_mean: np.ndarray | None = None  # shape (n_channels,)
+        self.ch_std: np.ndarray | None = None
 
-    def fit(self, X: np.ndarray) -> "ChannelMinMaxScaler":
-        # Compute min/max over samples and time axis, keeping channel axis
-        self.ch_min = X.min(axis=(0, 2))        # (n_channels,)
-        self.ch_max = X.max(axis=(0, 2))
+    def fit(self, X: np.ndarray) -> "ChannelStandardScaler":
+        # Compute mean/std over samples and time axis, keeping channel axis
+        self.ch_mean = X.mean(axis=(0, 2))      # (n_channels,)
+        self.ch_std = X.std(axis=(0, 2))
         return self
 
     def transform(self, X: np.ndarray) -> np.ndarray:
-        assert self.ch_min is not None, "Scaler has not been fitted yet."
-        rng = self.ch_max - self.ch_min
-        rng[rng == 0] = 1.0                     # avoid division by zero for constant channels
+        assert self.ch_mean is not None, "Scaler has not been fitted yet."
+        std = self.ch_std.copy()
+        # Handle both constant channels and very small standard deviations
+        std[std < 1e-7] = 1.0
         # Broadcast: (n_channels,) -> (1, n_channels, 1)
-        min_ = self.ch_min[np.newaxis, :, np.newaxis]
-        rng_ = rng[np.newaxis, :, np.newaxis]
-        return (X - min_) / rng_
+        mean_ = self.ch_mean[np.newaxis, :, np.newaxis]
+        std_ = std[np.newaxis, :, np.newaxis]
+        return (X - mean_) / std_
 
     def fit_transform(self, X: np.ndarray) -> np.ndarray:
         return self.fit(X).transform(X)
@@ -120,7 +122,7 @@ def build_dataset(data_dir: str = DATA_DIR) -> dict:
     X_test, y_test = _collect(test_files)
 
     # Fit scaler on training data only
-    scaler = ChannelMinMaxScaler()
+    scaler = ChannelStandardScaler()
     X_train = scaler.fit_transform(X_train)
     X_test  = scaler.transform(X_test)
 

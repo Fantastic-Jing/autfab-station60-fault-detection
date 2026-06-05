@@ -141,27 +141,47 @@ def process_file(filepath: str) -> tuple[np.ndarray, np.ndarray]:
     src_hz = _estimate_source_hz(df)
     logger.debug("%s: estimated %.1f Hz -> resampling to %d Hz", filename, src_hz, TARGET_HZ)
 
-    n_resampled = int(round(len(features_raw) * TARGET_HZ / src_hz))
-    features_rs = np.zeros((n_resampled, n_channels), dtype=np.float32)
-    for ch in range(n_channels):
-        features_rs[:, ch] = _resample_array(features_raw[:, ch], src_hz, TARGET_HZ)
+    # Resample first channel to get actual output length
+    ch0_resampled = _resample_array(features_raw[:, 0], src_hz, TARGET_HZ)
+    actual_len = len(ch0_resampled)
 
-    # Resample labels using nearest-neighbour (no interpolation for discrete values)
+    # Resample remaining channels with length normalization
+    features_rs = np.zeros((actual_len, n_channels), dtype=np.float32)
+    features_rs[:, 0] = ch0_resampled
+    for ch in range(1, n_channels):
+        ch_resampled = _resample_array(features_raw[:, ch], src_hz, TARGET_HZ)
+        # Handle minor length discrepancies (truncate or pad)
+        if len(ch_resampled) > actual_len:
+            features_rs[:, ch] = ch_resampled[:actual_len]
+        elif len(ch_resampled) < actual_len:
+            features_rs[:len(ch_resampled), ch] = ch_resampled
+        else:
+            features_rs[:, ch] = ch_resampled
+
+    # Resample labels to match actual feature length
     label_indices = np.round(
-        np.linspace(0, len(labels) - 1, n_resampled)
+        np.linspace(0, len(labels) - 1, actual_len)
     ).astype(int)
     labels_rs = labels[label_indices]
 
     # Zero-pad if shorter than one window
-    if n_resampled < WINDOW_STEPS:
-        pad_len = WINDOW_STEPS - n_resampled
+    if actual_len < WINDOW_STEPS:
+        pad_len = WINDOW_STEPS - actual_len
         logger.warning(
             "%s: only %d steps after resampling; zero-padding %d steps.",
-            filename, n_resampled, pad_len
+            filename, actual_len, pad_len
         )
-        features_rs = np.pad(features_rs, ((0, pad_len), (0, 0)), mode="constant")
+        # Pad with repeated last value for each channel (more realistic than zeros)
+        last_values = features_rs[-1:, :]  # (1, n_channels)
+        pad_features = np.tile(last_values, (pad_len, 1))
+        features_rs = np.vstack([features_rs, pad_features])
+
         # Pad labels with the dominant label in the file
-        dominant_label = int(np.bincount(labels_rs[labels_rs >= 0]).argmax())
+        valid_labels = labels_rs[labels_rs >= 0]
+        if len(valid_labels) > 0:
+            dominant_label = int(np.bincount(valid_labels).argmax())
+        else:
+            dominant_label = 0  # Fallback to label 0 if no valid labels
         labels_rs = np.pad(labels_rs, (0, pad_len), constant_values=dominant_label)
 
     X, y = _extract_windows(features_rs, labels_rs, WINDOW_STEPS, STRIDE_STEPS)
