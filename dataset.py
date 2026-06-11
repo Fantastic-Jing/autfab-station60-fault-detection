@@ -17,9 +17,9 @@ from preprocessing import process_file
 logger = logging.getLogger(__name__)
 
 
-# ---------------------------------------------------------------------------
+
 # File-level split
-# ---------------------------------------------------------------------------
+
 
 def _is_test_file(filename: str) -> bool:
     """Return True if the filename matches any marker in TEST_FILE_MARKERS."""
@@ -53,9 +53,9 @@ def split_files(data_dir: str) -> tuple[list[str], list[str]]:
     return train_files, test_files
 
 
-# ---------------------------------------------------------------------------
+
 # Normalization (z-score per channel)
-# ---------------------------------------------------------------------------
+
 
 class ChannelStandardScaler:
     """
@@ -88,9 +88,9 @@ class ChannelStandardScaler:
         return self.fit(X).transform(X)
 
 
-# ---------------------------------------------------------------------------
+
 # Dataset builder
-# ---------------------------------------------------------------------------
+
 
 def build_dataset(data_dir: str = DATA_DIR) -> dict:
     """
