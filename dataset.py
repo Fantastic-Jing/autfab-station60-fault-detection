@@ -30,7 +30,7 @@ def _is_test_file(filename: str) -> bool:
     return False
 
 
-def split_files(data_dir: str) -> tuple[list[str], list[str]]:
+def split_files(data_dir: str, show_examples: int = 3) -> tuple[list[str], list[str]]:
     """
     Scan data_dir and return (train_files, test_files).
     Only .CSV / .csv files are considered.
@@ -50,6 +50,13 @@ def split_files(data_dir: str) -> tuple[list[str], list[str]]:
             train_files.append(fp)
 
     logger.info("Split: %d train files, %d test files", len(train_files), len(test_files))
+
+    # Show a few example file paths from each split for quick verification
+    if show_examples and (train_files or test_files):
+        n = max(0, int(show_examples))
+        logger.info("Example train files: %s", train_files[:n])
+        logger.info("Example test  files: %s", test_files[:n])
+
     return train_files, test_files
 
 
@@ -79,7 +86,7 @@ class ChannelStandardScaler:
         std = self.ch_std.copy()
         # Handle both constant channels and very small standard deviations
         std[std < 1e-7] = 1.0
-        # Broadcast: (n_channels,) -> (1, n_channels, 1)
+        # (n_channels,) -> (1, n_channels, 1)
         mean_ = self.ch_mean[np.newaxis, :, np.newaxis]
         std_ = std[np.newaxis, :, np.newaxis]
         return (X - mean_) / std_
@@ -87,17 +94,46 @@ class ChannelStandardScaler:
     def fit_transform(self, X: np.ndarray) -> np.ndarray:
         return self.fit(X).transform(X)
 
+    def transform_sample(self, X: np.ndarray, n_samples: int = 2) -> np.ndarray:
+        """Transform X and return the first n_samples of the transformed data.
+
+        Useful to inspect how data looks after scaling without processing the
+        whole dataset in the caller.
+        """
+        assert self.ch_mean is not None, "Scaler has not been fitted yet."
+        Xt = self.transform(X)
+        return Xt[:max(0, int(n_samples))]
+
+    def describe_transformed(self, X: np.ndarray, n_samples: int = 2, decimals: int = 4) -> None:
+        """Log simple statistics (per-channel mean/std) for first n_samples.
+
+        This shows how the scaler changed data at a glance.
+        """
+        Xt = self.transform(X)
+        n = min(int(n_samples), Xt.shape[0]) if Xt.size else 0
+        for i in range(n):
+            sample = Xt[i]
+            means = sample.mean(axis=1)
+            stds = sample.std(axis=1)
+            logger.info("Transformed sample %d: per-channel mean=%s std=%s",
+                        i,
+                        np.round(means, decimals).tolist(),
+                        np.round(stds, decimals).tolist())
+
 
 
 # Dataset builder
 
 
-def build_dataset(data_dir: str = DATA_DIR) -> dict:
+def build_dataset(data_dir: str = DATA_DIR, show_samples: int = 3) -> dict:
     """
-    Process all CSV files, apply normalisation, and return a dict with:
+    Process CSV files, apply normalization, and return a dict with:
         X_train, y_train, X_test, y_test  (numpy arrays)
-        scaler                             (fitted ChannelMinMaxScaler)
+        scaler                             (fitted ChannelStandardScaler)
         train_files, test_files            (file path lists, for traceability)
+
+    If show_samples > 0, log a small number of example samples (per-channel
+    mean/std) after scaling to help inspect the processed data shape and values.
     """
     train_files, test_files = split_files(data_dir)
 
@@ -124,7 +160,18 @@ def build_dataset(data_dir: str = DATA_DIR) -> dict:
     # Fit scaler on training data only
     scaler = ChannelStandardScaler()
     X_train = scaler.fit_transform(X_train)
-    X_test  = scaler.transform(X_test)
+    X_test = scaler.transform(X_test)
+
+    # Optionally show a few transformed samples for quick inspection
+    if show_samples and X_train.size:
+        n = min(int(show_samples), X_train.shape[0])
+        logger.info("Showing %d transformed training samples (per-channel mean/std):", n)
+        scaler.describe_transformed(X_train, n_samples=n)
+
+    if show_samples and X_test.size:
+        n_test = min(int(show_samples), X_test.shape[0])
+        logger.info("Showing %d transformed test samples (per-channel mean/std):", n_test)
+        scaler.describe_transformed(X_test, n_samples=n_test)
 
     logger.info(
         "Dataset ready — train: %s  test: %s  classes: %s",

@@ -58,16 +58,16 @@ def main() -> None:
     logger.info("Building dataset ...")
     dataset = build_dataset()
 
-    logger.info(
-        "Train samples: %d  |  Test samples: %d",
-        len(dataset["y_train"]), len(dataset["y_test"])
-    )
+    # logger.info(
+    #     "Train samples: %d  |  Test samples: %d",
+    #     len(dataset["y_train"]), len(dataset["y_test"])
+    # )
 
-    logger.info("Running experiments ...")
-    all_results = run_experiments(dataset)
-
-    save_summary(all_results)
-    logger.info("Done. Results saved to '%s/'.", OUTPUT_DIR)
+    # logger.info("Running experiments ...")
+    # all_results = run_experiments(dataset)
+    #
+    # save_summary(all_results)
+    # logger.info("Done. Results saved to '%s/'.", OUTPUT_DIR)
 
 
 if __name__ == "__main__":

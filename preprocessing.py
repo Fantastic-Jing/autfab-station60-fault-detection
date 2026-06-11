@@ -22,9 +22,9 @@ from config import (
 logger = logging.getLogger(__name__)
 
 
-# ---------------------------------------------------------------------------
+
 # Internal helpers
-# ---------------------------------------------------------------------------
+
 
 def _estimate_source_hz(df: pd.DataFrame) -> float:
     """Estimate sampling frequency from the Second + Nanosecond columns."""
@@ -93,9 +93,9 @@ def _extract_windows(
     return np.stack(windows_X).astype(np.float32), np.array(windows_y, dtype=np.int32)
 
 
-# ---------------------------------------------------------------------------
+
 # Public API
-# ---------------------------------------------------------------------------
+
 
 def load_csv(filepath: str) -> pd.DataFrame:
     """Load a Station 60 CSV file; handle separator variants gracefully."""
