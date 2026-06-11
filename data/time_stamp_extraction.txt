@@ -1,0 +1,68 @@
+--------------------------------------------------------------------------------
+PLC global time-span stats (wraparound corrected):
+--------------------------------------------------------------------------------
+CSV filename                                       | Avg interval | Stable frequency
+--------------------------------------------------------------------------------
+10_1_timeSeriesStation60_2025-04-23_21-17-41.CSV   |     14.81 ms |     67.5 Hz
+10_2_timeSeriesStation60_2025-04-28_09-44-47.CSV   |     15.92 ms |     62.8 Hz
+10_3_timeSeriesStation60_2025-04-28_09-48-28.CSV   |     15.92 ms |     62.8 Hz
+10_4_timeSeriesStation60_2025-04-28_09-50-39.CSV   |     15.96 ms |     62.7 Hz
+11_1_timeSeriesStation60_2025-04-28_15-17-29.CSV   |     13.34 ms |     74.9 Hz
+11_2_timeSeriesStation60_2025-04-28_10-36-40.CSV   |     13.63 ms |     73.4 Hz
+11_3_timeSeriesStation60_2025-04-28_10-48-22.CSV   |     13.48 ms |     74.2 Hz
+11_4_timeSeriesStation60_2025-04-28_15-56-24.CSV   |     14.71 ms |     68.0 Hz
+12_1_timeSeriesStation60_2025-04-28_15-22-29.CSV   |     12.87 ms |     77.7 Hz
+12_2_timeSeriesStation60_2025-04-28_15-26-24.CSV   |     12.95 ms |     77.2 Hz
+12_3_timeSeriesStation60_2025-04-28_15-47-52.CSV   |     13.02 ms |     76.8 Hz
+12_4_timeSeriesStation60_2025-04-28_15-42-58.CSV   |     14.34 ms |     69.8 Hz
+13_1_timeSeriesStation60_2025-04-28_16-03-40.CSV   |     12.78 ms |     78.3 Hz
+13_2_timeSeriesStation60_2025-04-28_16-07-53.CSV   |     12.68 ms |     78.8 Hz
+13_3_timeSeriesStation60_2025-04-28_16-22-02.CSV   |     12.97 ms |     77.1 Hz
+13_4_timeSeriesStation60_2025-04-28_16-28-28.CSV   |     13.09 ms |     76.4 Hz
+14_1_timeSeriesStation60_2025-04-28_17-03-32.CSV   |     13.28 ms |     75.3 Hz
+14_2_timeSeriesStation60_2025-04-28_16-58-27.CSV   |     13.29 ms |     75.2 Hz
+14_3_timeSeriesStation60_2025-04-28_16-43-48.CSV   |     13.25 ms |     75.5 Hz
+14_4_timeSeriesStation60_2025-04-28_16-51-41.CSV   |     13.23 ms |     75.6 Hz
+1_1_timeSeriesStation60_2025-04-23_19-31-04.CSV    |     17.78 ms |     56.2 Hz
+1_2_timeSeriesStation60_2025-04-28_09-47-00.CSV    |     15.93 ms |     62.8 Hz
+1_timeSeriesStation60_2025-04-23_18-52-34.CSV      |     15.01 ms |     66.6 Hz
+1_timeSeriesStation60_2025-04-23_18-57-04.CSV      |     15.18 ms |     65.9 Hz
+1_timeSeriesStation60_2025-04-23_18-58-15.CSV      |     15.26 ms |     65.5 Hz
+1_timeSeriesStation60_2025-04-23_18-59-13.CSV      |     15.05 ms |     66.5 Hz
+2_1_timeSeriesStation60_2025-04-23_19-05-18.CSV    |     15.39 ms |     65.0 Hz
+2_2_timeSeriesStation60_2025-04-23_19-10-49.CSV    |     17.14 ms |     58.3 Hz
+2_3_timeSeriesStation60_2025-04-23_19-13-08.CSV    |     16.98 ms |     58.9 Hz
+2_4_timeSeriesStation60_2025-04-23_19-16-05.CSV    |     17.22 ms |     58.1 Hz
+3_1_timeSeriesStation60_2025-04-23_19-17-44.CSV    |     17.82 ms |     56.1 Hz
+3_2_timeSeriesStation60_2025-04-23_19-20-14.CSV    |     17.67 ms |     56.6 Hz
+3_3_timeSeriesStation60_2025-04-23_19-21-30.CSV    |     17.01 ms |     58.8 Hz
+3_4_timeSeriesStation60_2025-04-23_19-22-22.CSV    |     17.11 ms |     58.5 Hz
+4_1_timeSeriesStation60_2025-04-23_19-26-09.CSV    |     17.58 ms |     56.9 Hz
+4_2_timeSeriesStation60_2025-04-23_19-29-20.CSV    |     17.38 ms |     57.5 Hz
+4_3_timeSeriesStation60_2025-04-23_19-30-10.CSV    |     17.07 ms |     58.6 Hz
+4_4_timeSeriesStation60_2025-04-23_19-36-59.CSV    |     17.28 ms |     57.9 Hz
+5_1_timeSeriesStation60_2025-04-23_19-41-08.CSV    |     17.47 ms |     57.2 Hz
+5_2_timeSeriesStation60_2025-04-23_19-43-09.CSV    |     17.22 ms |     58.1 Hz
+5_3_timeSeriesStation60_2025-04-23_19-44-05.CSV    |     17.38 ms |     57.6 Hz
+5_4_timeSeriesStation60_2025-04-23_19-45-00.CSV    |     17.40 ms |     57.5 Hz
+6_1_timeSeriesStation60_2025-04-23_19-49-46.CSV    |     17.34 ms |     57.7 Hz
+6_2_timeSeriesStation60_2025-04-23_19-53-12.CSV    |     17.32 ms |     57.7 Hz
+6_3_timeSeriesStation60_2025-04-23_19-54-36.CSV    |     17.02 ms |     58.8 Hz
+6_4_timeSeriesStation60_2025-04-23_19-58-36.CSV    |     17.31 ms |     57.8 Hz
+7_1_timeSeriesStation60_2025-04-28_17-22-47.CSV    |     13.35 ms |     74.9 Hz
+7_2_timeSeriesStation60_2025-04-28_17-38-44.CSV    |     12.80 ms |     78.1 Hz
+7_3_timeSeriesStation60_2025-04-28_17-29-21.CSV    |     13.13 ms |     76.2 Hz
+7_4_timeSeriesStation60_2025-04-28_17-52-36.CSV    |     14.14 ms |     70.7 Hz
+7_5_timeSeriesStation60_2025-04-28_17-27-18.CSV    |     13.24 ms |     75.5 Hz
+7_6_timeSeriesStation60_2025-04-28_17-46-21.CSV    |     14.16 ms |     70.6 Hz
+8_1_timeSeriesStation60_2025-04-23_20-31-53.CSV    |     14.75 ms |     67.8 Hz
+8_2_timeSeriesStation60_2025-04-23_20-28-27.CSV    |     14.66 ms |     68.2 Hz
+8_3_timeSeriesStation60_2025-04-23_20-33-59.CSV    |     14.67 ms |     68.2 Hz
+8_4_timeSeriesStation60_2025-04-23_20-36-13.CSV    |     14.54 ms |     68.8 Hz
+8_5_timeSeriesStation60_2025-04-23_20-40-25.CSV    |     14.56 ms |     68.7 Hz
+8_6_timeSeriesStation60_2025-04-23_20-45-09.CSV    |     14.47 ms |     69.1 Hz
+9_1_timeSeriesStation60_2025-04-23_21-05-30.CSV    |     13.51 ms |     74.0 Hz
+9_2_timeSeriesStation60_2025-04-28_10-05-17.CSV    |     13.12 ms |     76.2 Hz
+9_3_timeSeriesStation60_2025-04-28_10-12-36.CSV    |     14.10 ms |     70.9 Hz
+9_4_timeSeriesStation60_2025-04-28_10-14-18.CSV    |     14.02 ms |     71.3 Hz
+--------------------------------------------------------------------------------

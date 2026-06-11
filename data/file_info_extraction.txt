@@ -1,0 +1,71 @@
+------------------------------------------------------------
+Dataset summary:
+Total CSV files detected: 62
+------------------------------------------------------------
+CSV filename                             | Row count (time steps)
+------------------------------------------------------------
+10_1_timeSeriesStation60_2025-04-23_21-17-41.CSV | 2219           
+10_2_timeSeriesStation60_2025-04-28_09-44-47.CSV | 2578           
+10_3_timeSeriesStation60_2025-04-28_09-48-28.CSV | 2006           
+10_4_timeSeriesStation60_2025-04-28_09-50-39.CSV | 2291           
+11_1_timeSeriesStation60_2025-04-28_15-17-29.CSV | 2730           
+11_2_timeSeriesStation60_2025-04-28_10-36-40.CSV | 2322           
+11_3_timeSeriesStation60_2025-04-28_10-48-22.CSV | 2317           
+11_4_timeSeriesStation60_2025-04-28_15-56-24.CSV | 2287           
+12_1_timeSeriesStation60_2025-04-28_15-22-29.CSV | 2525           
+12_2_timeSeriesStation60_2025-04-28_15-26-24.CSV | 2444           
+12_3_timeSeriesStation60_2025-04-28_15-47-52.CSV | 2789           
+12_4_timeSeriesStation60_2025-04-28_15-42-58.CSV | 2278           
+13_1_timeSeriesStation60_2025-04-28_16-03-40.CSV | 2552           
+13_2_timeSeriesStation60_2025-04-28_16-07-53.CSV | 2521           
+13_3_timeSeriesStation60_2025-04-28_16-22-02.CSV | 2714           
+13_4_timeSeriesStation60_2025-04-28_16-28-28.CSV | 2487           
+14_1_timeSeriesStation60_2025-04-28_17-03-32.CSV | 2263           
+14_2_timeSeriesStation60_2025-04-28_16-58-27.CSV | 2260           
+14_3_timeSeriesStation60_2025-04-28_16-43-48.CSV | 2268           
+14_4_timeSeriesStation60_2025-04-28_16-51-41.CSV | 2270           
+1_1_timeSeriesStation60_2025-04-23_19-31-04.CSV | 31             
+1_2_timeSeriesStation60_2025-04-28_09-47-00.CSV | 1142           
+1_timeSeriesStation60_2025-04-23_18-52-34.CSV | 256            
+1_timeSeriesStation60_2025-04-23_18-57-04.CSV | 256            
+1_timeSeriesStation60_2025-04-23_18-58-15.CSV | 243            
+1_timeSeriesStation60_2025-04-23_18-59-13.CSV | 256            
+2_1_timeSeriesStation60_2025-04-23_19-05-18.CSV | 1953           
+2_2_timeSeriesStation60_2025-04-23_19-10-49.CSV | 840            
+2_3_timeSeriesStation60_2025-04-23_19-13-08.CSV | 827            
+2_4_timeSeriesStation60_2025-04-23_19-16-05.CSV | 992            
+3_1_timeSeriesStation60_2025-04-23_19-17-44.CSV | 1686           
+3_2_timeSeriesStation60_2025-04-23_19-20-14.CSV | 841            
+3_3_timeSeriesStation60_2025-04-23_19-21-30.CSV | 896            
+3_4_timeSeriesStation60_2025-04-23_19-22-22.CSV | 1039           
+4_1_timeSeriesStation60_2025-04-23_19-26-09.CSV | 1709           
+4_2_timeSeriesStation60_2025-04-23_19-29-20.CSV | 826            
+4_3_timeSeriesStation60_2025-04-23_19-30-10.CSV | 882            
+4_4_timeSeriesStation60_2025-04-23_19-36-59.CSV | 971            
+5_1_timeSeriesStation60_2025-04-23_19-41-08.CSV | 1720           
+5_2_timeSeriesStation60_2025-04-23_19-43-09.CSV | 864            
+5_3_timeSeriesStation60_2025-04-23_19-44-05.CSV | 835            
+5_4_timeSeriesStation60_2025-04-23_19-45-00.CSV | 1015           
+6_1_timeSeriesStation60_2025-04-23_19-49-46.CSV | 1733           
+6_2_timeSeriesStation60_2025-04-23_19-53-12.CSV | 1735           
+6_3_timeSeriesStation60_2025-04-23_19-54-36.CSV | 1767           
+6_4_timeSeriesStation60_2025-04-23_19-58-36.CSV | 1736           
+7_1_timeSeriesStation60_2025-04-28_17-22-47.CSV | 4616           
+7_2_timeSeriesStation60_2025-04-28_17-38-44.CSV | 2347           
+7_3_timeSeriesStation60_2025-04-28_17-29-21.CSV | 2699           
+7_4_timeSeriesStation60_2025-04-28_17-52-36.CSV | 2125           
+7_5_timeSeriesStation60_2025-04-28_17-27-18.CSV | 3859           
+7_6_timeSeriesStation60_2025-04-28_17-46-21.CSV | 2121           
+8_1_timeSeriesStation60_2025-04-23_20-31-53.CSV | 2038           
+8_2_timeSeriesStation60_2025-04-23_20-28-27.CSV | 2050           
+8_3_timeSeriesStation60_2025-04-23_20-33-59.CSV | 2047           
+8_4_timeSeriesStation60_2025-04-23_20-36-13.CSV | 2067           
+8_5_timeSeriesStation60_2025-04-23_20-40-25.CSV | 2064           
+8_6_timeSeriesStation60_2025-04-23_20-45-09.CSV | 2077           
+9_1_timeSeriesStation60_2025-04-23_21-05-30.CSV | 2223           
+9_2_timeSeriesStation60_2025-04-28_10-05-17.CSV | 2290           
+9_3_timeSeriesStation60_2025-04-28_10-12-36.CSV | 2131           
+9_4_timeSeriesStation60_2025-04-28_10-14-18.CSV | 2247           
+------------------------------------------------------------
+Total accumulated rows across all files: 114173
+------------------------------------------------------------
