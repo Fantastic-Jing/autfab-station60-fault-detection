@@ -25,7 +25,7 @@ def setup_logging(log_level: int = logging.INFO) -> None:
     fmt = "%(asctime)s  %(levelname)-8s  %(name)s — %(message)s"
     logging.basicConfig(level=log_level, format=fmt, datefmt="%H:%M:%S")
 
-
+# Formats results for each model and saves them as a plain text report
 def save_summary(all_results: list[dict], save_dir: str = OUTPUT_DIR) -> None:
     """Write a human-readable text summary of all metric results."""
     os.makedirs(save_dir, exist_ok=True)
@@ -52,17 +52,21 @@ def save_summary(all_results: list[dict], save_dir: str = OUTPUT_DIR) -> None:
 
 
 def main() -> None:
+    # Set up logging with timestamps and log levels
     setup_logging()
     logger = logging.getLogger(__name__)
 
+    # Build dataset (preprocessing + train/test split)
     logger.info("Building dataset ...")
     dataset = build_dataset()
 
+    # Log sample counts for train and test sets
     logger.info(
         "Train samples: %d  |  Test samples: %d",
         len(dataset["y_train"]), len(dataset["y_test"])
     )
 
+    # Run experiments and save results
     logger.info("Running experiments ...")
     all_results = run_experiments(dataset)
 

@@ -85,7 +85,7 @@ stats_df = pd.DataFrame(
 )
 
 
-stats_df.to_csv("minirocket_basic_motions_metrics.csv", index=False)
+#stats_df.to_csv("minirocket_basic_motions_metrics.csv", index=False)
 
 
 print("\nMetrics:")
