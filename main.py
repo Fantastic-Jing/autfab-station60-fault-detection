@@ -23,7 +23,13 @@ from train_eval import run_experiments
 
 def setup_logging(log_level: int = logging.INFO) -> None:
     fmt = "%(asctime)s  %(levelname)-8s  %(name)s — %(message)s"
+
+    # Log to both console and file simultaneously
     logging.basicConfig(level=log_level, format=fmt, datefmt="%H:%M:%S")
+
+    file_handler = logging.FileHandler("results/run.log", mode="w", encoding="utf-8")
+    file_handler.setFormatter(logging.Formatter(fmt, datefmt="%H:%M:%S"))
+    logging.getLogger().addHandler(file_handler)
 
 
 def save_summary(all_results: list[dict], save_dir: str = OUTPUT_DIR) -> None:
@@ -52,16 +58,20 @@ def save_summary(all_results: list[dict], save_dir: str = OUTPUT_DIR) -> None:
 
 
 def main() -> None:
+
+    # logger
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
     setup_logging()
     logger = logging.getLogger(__name__)
 
+    # build_dataset
     logger.info("Building dataset ...")
     dataset = build_dataset()
 
-    # logger.info(
-    #     "Train samples: %d  |  Test samples: %d",
-    #     len(dataset["y_train"]), len(dataset["y_test"])
-    # )
+    logger.info(
+        "Train samples: %d  |  Test samples: %d",
+        len(dataset["y_train"]), len(dataset["y_test"])
+    )
 
     # logger.info("Running experiments ...")
     # all_results = run_experiments(dataset)

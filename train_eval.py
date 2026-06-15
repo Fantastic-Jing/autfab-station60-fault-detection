@@ -28,9 +28,9 @@ import os
 logger = logging.getLogger(__name__)
 
 
-# ---------------------------------------------------------------------------
+
 # Classifier factory
-# ---------------------------------------------------------------------------
+
 
 def build_minirocket(n_jobs: int = -1) -> MiniRocketClassifier:
     return MiniRocketClassifier(
@@ -52,9 +52,9 @@ def build_dtw_knn(n_neighbors: int = 1, window: float = 0.1) -> KNeighborsTimeSe
     )
 
 
-# ---------------------------------------------------------------------------
+
 # Train + evaluate
-# ---------------------------------------------------------------------------
+
 
 def train_and_evaluate(
     clf,
@@ -118,9 +118,9 @@ def train_and_evaluate(
     }
 
 
-# ---------------------------------------------------------------------------
+
 # Visualisation helpers
-# ---------------------------------------------------------------------------
+
 
 def plot_confusion_matrix(results: dict, save_dir: str = OUTPUT_DIR) -> None:
     os.makedirs(save_dir, exist_ok=True)
@@ -185,9 +185,9 @@ def plot_metric_comparison(all_results: list[dict], save_dir: str = OUTPUT_DIR) 
     logger.info("Comparison chart saved to %s", out_path)
 
 
-# ---------------------------------------------------------------------------
+
 # Main entry point
-# ---------------------------------------------------------------------------
+
 
 def run_experiments(dataset: dict) -> list[dict]:
     """

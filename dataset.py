@@ -20,7 +20,6 @@ logger = logging.getLogger(__name__)
 
 # File-level split
 
-
 def _is_test_file(filename: str) -> bool:
     """Return True if the filename matches any marker in TEST_FILE_MARKERS."""
     for markers in TEST_FILE_MARKERS.values():
@@ -59,11 +58,7 @@ def split_files(data_dir: str, show_examples: int = 3) -> tuple[list[str], list[
 
     return train_files, test_files
 
-
-
 # Normalization (z-score per channel)
-
-
 class ChannelStandardScaler:
     """
     Per-channel standard scaler (z-score normalization) for 3-D arrays.
@@ -123,8 +118,6 @@ class ChannelStandardScaler:
 
 
 # Dataset builder
-
-
 def build_dataset(data_dir: str = DATA_DIR, show_samples: int = 3) -> dict:
     """
     Process CSV files, apply normalization, and return a dict with:
@@ -132,15 +125,25 @@ def build_dataset(data_dir: str = DATA_DIR, show_samples: int = 3) -> dict:
         scaler                             (fitted ChannelStandardScaler)
         train_files, test_files            (file path lists, for traceability)
 
-    If show_samples > 0, log a small number of example samples (per-channel
-    mean/std) after scaling to help inspect the processed data shape and values.
+        # X: channel values, shape (n_windows, 44, 128) — samples x channels x timesteps
+        # y: label for each window, shape (n_windows,)
+        # scaler: stores per-channel mean/std fitted on training data; reused to scale test data
+        # axis=0: samples dimension;
+        # axis=1: channels;
+        # axis=2: timesteps
+
+    If show_samples > 0, print a few examples after scaling to verify the output.
     """
+
+    # File-level split to prevent data leakage between adjacent windows.
     train_files, test_files = split_files(data_dir)
 
+    # function: collecting processed each file and stack results into (total_windows, 44, 128).
     def _collect(file_list: list[str]) -> tuple[np.ndarray, np.ndarray]:
         X_parts, y_parts = [], []
         for fp in file_list:
             try:
+                # Call preprocessing function
                 X, y = process_file(fp)
                 if len(X) > 0:
                     X_parts.append(X)
@@ -148,26 +151,27 @@ def build_dataset(data_dir: str = DATA_DIR, show_samples: int = 3) -> dict:
                 else:
                     logger.warning("No windows extracted from %s; skipping.", fp)
             except Exception as exc:
+                # Log and continue so one bad file doesn't stop everything.
                 logger.error("Failed to process %s: %s", fp, exc)
+
         return np.concatenate(X_parts, axis=0), np.concatenate(y_parts, axis=0)
 
+    # Process files and collect all windows into final train/test arrays.
     logger.info("Processing training files ...")
     X_train, y_train = _collect(train_files)
-
     logger.info("Processing test files ...")
     X_test, y_test = _collect(test_files)
 
-    # Fit scaler on training data only
+    # Fit on training data only; apply the same statistics to the test set.
     scaler = ChannelStandardScaler()
     X_train = scaler.fit_transform(X_train)
-    X_test = scaler.transform(X_test)
+    X_test  = scaler.transform(X_test)
 
-    # Optionally show a few transformed samples for quick inspection
+    # Optionally show a few transformed samples to verify the scaling effect.
     if show_samples and X_train.size:
         n = min(int(show_samples), X_train.shape[0])
         logger.info("Showing %d transformed training samples (per-channel mean/std):", n)
         scaler.describe_transformed(X_train, n_samples=n)
-
     if show_samples and X_test.size:
         n_test = min(int(show_samples), X_test.shape[0])
         logger.info("Showing %d transformed test samples (per-channel mean/std):", n_test)
