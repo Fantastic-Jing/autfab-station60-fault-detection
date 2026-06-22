@@ -4,7 +4,13 @@ from pathlib import Path
 from timeit import default_timer as timer
 
 from sklearn.linear_model import RidgeClassifierCV
-from sklearn.metrics import accuracy_score, f1_score
+from sklearn.metrics import (
+    accuracy_score,
+    f1_score,
+    confusion_matrix,
+    ConfusionMatrixDisplay,
+)
+import matplotlib.pyplot as plt
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 
@@ -18,26 +24,173 @@ def load_ts_file(path: Path):
     return X, y
 
 
+def normalize_per_dimension_per_sample(X):
+    """
+    Normalize từng time series trong mỗi cell (sample, dimension)
+    bằng min-max normalization vào [0, 1], TRỪ dimension cuối (label).
+    """
+    X_new = X.copy()
+    n_samples, n_dims = X.shape
+
+    for i in range(n_samples):
+        for j in range(n_dims - 1):
+            series = X_new.iloc[i, j]
+            arr = np.asarray(series, dtype=float)
+
+            if arr.size == 0:
+                continue
+
+            min_val = arr.min()
+            max_val = arr.max()
+
+            if max_val - min_val == 0:
+                arr_norm = np.zeros_like(arr, dtype=float)
+            else:
+                arr_norm = (arr - min_val) / (max_val - min_val)
+
+            X_new.iloc[i, j] = pd.Series(arr_norm)
+
+    return X_new
+
+
+def window_sliding_augmentation_from_last_dim(X, window_size, stride=1):
+    """
+    Tạo sample mới bằng window sliding với độ dài window ngẫu nhiên.
+    - Feature: tất cả dimension trừ dimension cuối.
+    - Label của window: mode của dimension cuối trong window.
+
+    Ghi chú:
+    - Biến biên độ (amplitude) là biến cục bộ trong hàm.
+    - Ví dụ window_size=100, amplitude=10 -> window length ngẫu nhiên trong [90, 110].
+    """
+    X_list = []
+    y_list = []
+
+    n_samples, n_dims = X.shape
+    dim_names = X.columns.tolist()
+
+    feature_dim_names = dim_names[:-1]
+    label_dim_name = dim_names[-1]
+
+    amplitude = 20  # chỉnh tay mỗi lần chạy nếu muốn
+
+    min_window_size = max(1, window_size - amplitude)
+    max_window_size = window_size + amplitude
+
+    for i in range(n_samples):
+        sample = X.iloc[i]
+        label_series = sample[label_dim_name]
+        label_arr = np.asarray(label_series)
+
+        T = len(label_arr)
+
+        # Nếu sample còn ngắn hơn cả window nhỏ nhất thì bỏ qua
+        if T < min_window_size:
+            continue
+
+        for start in range(0, T - min_window_size + 1, stride):
+            # Lấy ngẫu nhiên độ dài window cho lần cắt này
+            current_window_size = np.random.randint(
+                min_window_size, max_window_size + 1
+            )
+
+            end = start + current_window_size
+
+            # Nếu window vượt quá chiều dài sample thì bỏ qua
+            if end > T:
+                continue
+
+            window_labels = label_arr[start:end]
+            window_label = pd.Series(window_labels).value_counts().idxmax()
+
+            new_row = {}
+            for dim_name in feature_dim_names:
+                series = sample[dim_name]
+                arr = np.asarray(series)
+                window_feat = arr[start:end]
+                new_row[dim_name] = pd.Series(window_feat)
+
+            X_list.append(new_row)
+            y_list.append(window_label)
+
+    X_aug = pd.DataFrame(X_list)
+    X_aug = X_aug[feature_dim_names]
+    y_aug = np.array(y_list)
+
+    return X_aug, y_aug
+
+
+def split_windows_train_test(X_aug, y_aug):
+    """
+    Cứ 3 sample vào train, sample thứ 4 vào test, lặp lại.
+    """
+    train_rows = []
+    train_labels = []
+    test_rows = []
+    test_labels = []
+
+    for i in range(len(y_aug)):
+        if (i + 1) % 4 == 0:
+            test_rows.append(X_aug.iloc[i])
+            test_labels.append(y_aug[i])
+        else:
+            train_rows.append(X_aug.iloc[i])
+            train_labels.append(y_aug[i])
+
+    X_train = pd.DataFrame(train_rows).reset_index(drop=True)
+    X_test = pd.DataFrame(test_rows).reset_index(drop=True)
+    y_train = np.array(train_labels)
+    y_test = np.array(test_labels)
+
+    return X_train, y_train, X_test, y_test
+
+
+def print_confusion_matrix_with_labels(y_true, y_pred, labels):
+    """
+    In confusion matrix lên terminal với label nguyên.
+    """
+    cm = confusion_matrix(y_true, y_pred, labels=labels)
+    df_cm = pd.DataFrame(cm, index=labels, columns=labels)
+
+    print("\nConfusion Matrix (Actual vs Predicted):")
+    print("(Rows = Actual, Columns = Predicted)")
+    print(df_cm.to_string())
+
+
 def main() -> None:
     root = Path(__file__).resolve().parent
-    train_path = root / "TrainV3.ts"
-    test_path = root / "TestV3.ts"
+    data_path = root / "rawV3.ts"
 
-    if not train_path.exists() or not test_path.exists():
+    if not data_path.exists():
         raise FileNotFoundError(
-            "Train.ts and Test.ts must be present in the same folder as this script."
+            "rawV3.ts must be present in the same folder as this script."
         )
 
-    X_train, y_train = load_ts_file(train_path)
-    X_test, y_test = load_ts_file(test_path)
+    # Load only one raw file
+    X_raw, _ = load_ts_file(data_path)
+
+    # Normalize all dimensions except the last one (label)
+    X_raw = normalize_per_dimension_per_sample(X_raw)
+
+    # Window sliding
+    window_size = 100
+    stride = 50
+
+    X_aug, y_aug = window_sliding_augmentation_from_last_dim(
+        X_raw, window_size=window_size, stride=stride
+    )
+
+    # Split windows: 3 train, 1 test
+    X_train, y_train, X_test, y_test = split_windows_train_test(X_aug, y_aug)
 
     print("=" * 70)
-    print("Dataset: AutoFab general information")
+    print("Dataset: AutoFab window-level from one raw file")
     print("=" * 70)
+    print("Total windows:", len(y_aug))
     print("Train samples:", X_train.shape[0])
     print("Test samples:", X_test.shape[0])
-    print("Number of dimensions:", X_train.shape[1])
-    print("Labels:", np.unique(y_train))
+    print("Number of feature dimensions:", X_train.shape[1])
+    print("Labels:", np.unique(np.concatenate([y_train, y_test])))
 
     seed = 42
     np.random.seed(seed)
@@ -47,6 +200,7 @@ def main() -> None:
             pad_value_short_series=-10.0,
             random_state=seed,
             max_dilations_per_kernel=16,
+            reference_length="median",
         ),
         StandardScaler(with_mean=False),
         RidgeClassifierCV(alphas=np.logspace(-3, 3, 10)),
@@ -65,10 +219,33 @@ def main() -> None:
     accuracy = accuracy_score(y_test, y_pred)
     weighted_f1 = f1_score(y_test, y_pred, average="weighted")
 
+    labels = np.unique(np.concatenate([y_train, y_test]))
+    labels = labels.astype(int)
+
+    print_confusion_matrix_with_labels(y_test, y_pred, labels)
+
+    cm = confusion_matrix(y_test, y_pred, labels=labels)
+    disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=labels)
+
+    fig, ax = plt.subplots(figsize=(8, 6))
+    disp.plot(cmap=plt.cm.Blues, ax=ax, colorbar=True)
+
+    ax.set_xticks(np.arange(len(labels)))
+    ax.set_yticks(np.arange(len(labels)))
+    ax.set_xticklabels(labels)
+    ax.set_yticklabels(labels)
+    ax.set_xlabel("Predicted label")
+    ax.set_ylabel("True label")
+    plt.xticks(rotation=45)
+
+    plt.title("Confusion Matrix (window-level)")
+    plt.tight_layout()
+    plt.savefig("confusion_matrix.png", dpi=200)
+
     metrics = pd.DataFrame(
         [
             [
-                "AutoFab_TrainTest",
+                "AutoFab_OneFile_WindowLevel",
                 seed,
                 total_training_time,
                 inference_time,
@@ -91,39 +268,6 @@ def main() -> None:
 
     print("\nBest alpha selected by RidgeClassifierCV:")
     print(pipeline.named_steps["ridgeclassifiercv"].alpha_)
-
-    print("\nAll predictions:")
-    for i, (pred, true) in enumerate(zip(y_pred, y_test)):
-        print(f"Sample {i}: Predicted = {pred}, Actual = {true}")
-
-    print("\nMisclassified samples:")
-    for i, (pred, true) in enumerate(zip(y_pred, y_test)):
-        if pred != true:
-            print(f"Sample {i}: Predicted = {pred}, Actual = {true}")
-
-    # print("\nSample structure and lengths:")
-    # sample_idx = 0
-    # sample = X_train.iloc[sample_idx]
-    # print("=" * 70)
-    # print(f"DATA STRUCTURE SAMPLE {sample_idx}")
-    # print("=" * 70)
-    # print(f"Label: {y_train[sample_idx]}")
-    # print(f"Type: {type(sample)}")
-    # print(f"Number of dimensions: {len(sample)}")
-    # print(f"Dimension names: {sample.index.tolist()}")
-
-    # print("\nLength of each dimension for the sample:")
-    # for dim in sample.index:
-    #     series = sample[dim]
-    #     print(f"{dim}: {len(series)}")
-
-    print("\nLengths for each training sample")
-    for i in range(len(y_train)):
-        lengths = [len(X_train.iloc[i, j]) for j in range(X_train.shape[1])]
-        if len(set(lengths)) == 1:
-            print(f"Sample {i}: length = {lengths[0]}")
-        else:
-            print(f"Sample {i}: lengths = {lengths}")
 
 
 if __name__ == "__main__":
