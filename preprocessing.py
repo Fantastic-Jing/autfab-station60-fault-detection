@@ -21,11 +21,7 @@ from config import (
 
 logger = logging.getLogger(__name__)
 
-
-
 # Internal helpers
-
-
 def _estimate_source_hz(df: pd.DataFrame) -> float:
     """Estimate sampling frequency from the Second + Nanosecond columns."""
     seconds = df["Second"].astype(float).values
@@ -41,10 +37,9 @@ def _estimate_source_hz(df: pd.DataFrame) -> float:
     median_interval_s = np.median(diffs) / 1_000_000_000
     return 1.0 / median_interval_s
 
-
 def _resample_array(arr: np.ndarray, src_hz: float, dst_hz: float) -> np.ndarray:
     """
-    Resample a 1-D signal from src_hz to dst_hz using polyphase filtering.
+    Resample from src_hz to dst_hz
     Uses the exact rational approximation (up/down integers) for quality.
     """
     if abs(src_hz - dst_hz) < 0.5:   # already close enough
@@ -53,7 +48,6 @@ def _resample_array(arr: np.ndarray, src_hz: float, dst_hz: float) -> np.ndarray
     ratio = Fraction(dst_hz / src_hz).limit_denominator(1000)
     up, down = ratio.numerator, ratio.denominator
     return resample_poly(arr, up, down).astype(np.float32)
-
 
 def _extract_windows(
     features: np.ndarray,   # shape (n_timesteps, n_channels)
@@ -95,8 +89,6 @@ def _extract_windows(
 
 
 # Public API
-
-
 def load_csv(filepath: str) -> pd.DataFrame:
     """Load a Station 60 CSV file; handle separator variants gracefully."""
     try:
@@ -108,12 +100,10 @@ def load_csv(filepath: str) -> pd.DataFrame:
     df.columns = [c.strip() for c in df.columns]
     return df
 
-
 def get_feature_cols(df: pd.DataFrame) -> list[str]:
     """Return feature column names: all columns except timestamps and label."""
     exclude = set(TIMESTAMP_COLS) | {LABEL_COL}
     return [c for c in df.columns if c not in exclude]
-
 
 def process_file(filepath: str) -> tuple[np.ndarray, np.ndarray]:
     """

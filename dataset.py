@@ -162,12 +162,13 @@ def build_dataset(data_dir: str = DATA_DIR, show_samples: int = 3) -> dict:
     logger.info("Processing test files ...")
     X_test, y_test = _collect(test_files)
 
-    # Fit on training data only; apply the same statistics to the test set.
+    # Fit on training data only;
+    # but apply the same statistics to the test set.
     scaler = ChannelStandardScaler()
     X_train = scaler.fit_transform(X_train)
     X_test  = scaler.transform(X_test)
 
-    # Optionally show a few transformed samples to verify the scaling effect.
+    # Optionally show transformed samples
     if show_samples and X_train.size:
         n = min(int(show_samples), X_train.shape[0])
         logger.info("Showing %d transformed training samples (per-channel mean/std):", n)
