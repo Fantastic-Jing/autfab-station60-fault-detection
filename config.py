@@ -13,7 +13,7 @@ OUTPUT_DIR = os.path.join(PROJECT_ROOT, "results")        # Directory for saving
 # --- Sampling ---
 TARGET_HZ = 64                  # Unified resampling frequency (Hz)
 WINDOW_STEPS = 128              # Window length in samples at TARGET_HZ (= 2 seconds)
-STRIDE_STEPS = 64               # Slide stride (= 1 second, 50% overlap)
+STRIDE_STEPS = 16               # Slide stride (= 1 second, 50% overlap)
 
 # --- Label mapping ---
 # Merge transition states (15, 16, 17) into label 1 ("recovery transition")

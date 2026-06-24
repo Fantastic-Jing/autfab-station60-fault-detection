@@ -73,11 +73,11 @@ def main() -> None:
         len(dataset["y_train"]), len(dataset["y_test"])
     )
 
-    # logger.info("Running experiments ...")
-    # all_results = run_experiments(dataset)
-    #
-    # save_summary(all_results)
-    # logger.info("Done. Results saved to '%s/'.", OUTPUT_DIR)
+    logger.info("Running ...")
+    all_results = run_experiments(dataset)
+
+    save_summary(all_results)
+    logger.info("Done. Results saved to '%s/'.", OUTPUT_DIR)
 
 
 if __name__ == "__main__":

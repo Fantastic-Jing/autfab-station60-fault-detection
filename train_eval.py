@@ -118,9 +118,7 @@ def train_and_evaluate(
     }
 
 
-
 # Visualisation helpers
-
 
 def plot_confusion_matrix(results: dict, save_dir: str = OUTPUT_DIR) -> None:
     os.makedirs(save_dir, exist_ok=True)
@@ -201,7 +199,7 @@ def run_experiments(dataset: dict) -> list[dict]:
 
     classifiers = [
         (build_minirocket(),    "MiniROCKET"),
-        (build_dtw_knn(),       "DTW-1NN"),
+        # (build_dtw_knn(),       "DTW-1NN"),
     ]
 
     all_results = []
