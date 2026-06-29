@@ -15,6 +15,12 @@ TARGET_HZ = 64                  # Unified resampling frequency (Hz)
 WINDOW_STEPS = 128              # Window length in samples at TARGET_HZ (= 2 seconds)
 STRIDE_STEPS = 16               # Slide stride (= 1 second, 50% overlap)
 
+# --- Test stride (use a smaller stride on the test set for denser evaluation)
+TEST_STRIDE_STEPS = 16         # stride to use when creating test windows (samples)
+
+# --- Training stride for First Fault Label pass
+TRAIN_STRIDE_STEPS = 16       # stride for the First Fault Label pass on training files
+
 # --- Label mapping ---
 # Merge transition states (15, 16, 17) into label 1 ("recovery transition")
 LABEL_REMAP = {15: 1, 16: 1, 17: 1}

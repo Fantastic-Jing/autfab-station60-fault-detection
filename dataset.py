@@ -11,8 +11,8 @@ import os
 import logging
 import numpy as np
 
-from config import DATA_DIR, TEST_FILE_MARKERS
-from preprocessing import process_file
+from config import DATA_DIR, TEST_FILE_MARKERS, TRAIN_STRIDE_STEPS, RANDOM_SEED, WINDOW_STEPS
+from preprocessing import process_file, resample_file, extract_windows_first_fault
 
 logger = logging.getLogger(__name__)
 
@@ -139,17 +139,60 @@ def build_dataset(data_dir: str = DATA_DIR, show_samples: int = 3) -> dict:
     train_files, test_files = split_files(data_dir)
 
     # function: collecting processed each file and stack results into (total_windows, 44, 128).
-    def _collect(file_list: list[str]) -> tuple[np.ndarray, np.ndarray]:
+    def _collect(file_list: list[str], mode: str = "train") -> tuple[np.ndarray, np.ndarray]:
+        """Collect processed windows from file_list.
+
+        mode: "train" or "test". Passed to preprocessing to control windowing.
+        """
         X_parts, y_parts = [], []
         for fp in file_list:
             try:
-                # Call preprocessing function
-                X, y = process_file(fp)
-                if len(X) > 0:
-                    X_parts.append(X)
-                    y_parts.append(y)
+                if mode == "train":
+                    # First pass: original Pure Window behaviour
+                    X_pure, y_pure = process_file(fp, mode="train")
+
+                    # Second pass: First Fault Label windows using TRAIN_STRIDE_STEPS
+                    try:
+                        features_rs, labels_rs, _ = resample_file(fp)
+                        X_ffl, y_ffl = extract_windows_first_fault(
+                            features_rs, labels_rs, WINDOW_STEPS, TRAIN_STRIDE_STEPS
+                        )
+                    except Exception as e:
+                        logger.error("Failed first-fault extraction for %s: %s", fp, e)
+                        X_ffl, y_ffl = np.empty((0,)), np.empty((0,))
+
+                    # Downsample ffl windows to match number of pure windows (1:1) if needed
+                    n_pure = len(X_pure) if hasattr(X_pure, "shape") else 0
+                    if n_pure > 0 and len(X_ffl) > n_pure:
+                        rng = np.random.default_rng(RANDOM_SEED)
+                        # Downsample First Fault Label windows to a 4:1 ratio vs pure windows.
+                        # Keep at least one sample when n_pure is small.
+                        idx = rng.choice(len(X_ffl), size=max(1, n_pure // 4), replace=False)
+                        X_ffl = X_ffl[idx]
+                        y_ffl = y_ffl[idx]
+
+                    # Combine both passes
+                    if (len(X_pure) == 0) and (len(X_ffl) == 0):
+                        logger.warning("No windows extracted from %s in both passes; skipping.", fp)
+                        continue
+                    elif len(X_pure) == 0:
+                        X_combined, y_combined = X_ffl, y_ffl
+                    elif len(X_ffl) == 0:
+                        X_combined, y_combined = X_pure, y_pure
+                    else:
+                        X_combined = np.concatenate([X_pure, X_ffl], axis=0)
+                        y_combined = np.concatenate([y_pure, y_ffl], axis=0)
+
+                    X_parts.append(X_combined)
+                    y_parts.append(y_combined)
                 else:
-                    logger.warning("No windows extracted from %s; skipping.", fp)
+                    # Test mode: use existing process_file behaviour (First Fault Label + TEST_STRIDE_STEPS)
+                    X, y = process_file(fp, mode=mode)
+                    if len(X) > 0:
+                        X_parts.append(X)
+                        y_parts.append(y)
+                    else:
+                        logger.warning("No windows extracted from %s; skipping.", fp)
             except Exception as exc:
                 # Log and continue so one bad file doesn't stop everything.
                 logger.error("Failed to process %s: %s", fp, exc)
@@ -158,9 +201,9 @@ def build_dataset(data_dir: str = DATA_DIR, show_samples: int = 3) -> dict:
 
     # Process files and collect all windows into final train/test arrays.
     logger.info("Processing training files ...")
-    X_train, y_train = _collect(train_files)
+    X_train, y_train = _collect(train_files, mode="train")
     logger.info("Processing test files ...")
-    X_test, y_test = _collect(test_files)
+    X_test, y_test = _collect(test_files, mode="test")
 
     # Fit on training data only;
     # but apply the same statistics to the test set.
