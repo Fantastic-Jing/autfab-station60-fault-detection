@@ -1,3 +1,4 @@
+from matplotlib.pylab import seed
 import numpy as np
 import pandas as pd
 from pathlib import Path
@@ -15,8 +16,11 @@ from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 
 from sktime.datasets._readers_writers.ts import load_from_tsfile_to_dataframe
-from sktime.transformations.panel.rocket import MiniRocketMultivariateVariable
+#from sktime.transformations.panel.rocket import MiniRocketMultivariateVariable
+from sktime.transformations.panel.rocket import MiniRocketMultivariate
 
+from sklearn.utils import resample
+from collections import Counter
 
 def load_ts_file(path: Path):
     """Load a .ts file into X and y."""
@@ -72,7 +76,7 @@ def window_sliding_augmentation_from_last_dim(X, window_size, stride=1):
     feature_dim_names = dim_names[:-1]
     label_dim_name = dim_names[-1]
 
-    amplitude = 20  # chỉnh tay mỗi lần chạy nếu muốn
+    amplitude = 0  # chỉnh tay mỗi lần chạy nếu muốn
 
     min_window_size = max(1, window_size - amplitude)
     max_window_size = window_size + amplitude
@@ -101,7 +105,8 @@ def window_sliding_augmentation_from_last_dim(X, window_size, stride=1):
                 continue
 
             window_labels = label_arr[start:end]
-            window_label = pd.Series(window_labels).value_counts().idxmax()
+            #window_label = pd.Series(window_labels).value_counts().idxmax()
+            window_label = window_labels[-1]
 
             new_row = {}
             for dim_name in feature_dim_names:
@@ -156,6 +161,40 @@ def print_confusion_matrix_with_labels(y_true, y_pred, labels):
     print("(Rows = Actual, Columns = Predicted)")
     print(df_cm.to_string())
 
+def oversample_minority_classes(X, y, random_state=42):
+    """
+    Oversample các class ít mẫu để số lượng mỗi class bằng class nhiều nhất.
+    """
+    df = X.copy()
+    df["label"] = y
+
+    class_counts = df["label"].value_counts()
+    max_count = class_counts.max()
+
+    balanced_parts = []
+
+    for cls in class_counts.index:
+        df_cls = df[df["label"] == cls]
+
+        if len(df_cls) < max_count:
+            df_cls_resampled = resample(
+                df_cls,
+                replace=True,
+                n_samples=max_count,
+                random_state=random_state,
+            )
+        else:
+            df_cls_resampled = df_cls
+
+        balanced_parts.append(df_cls_resampled)
+
+    df_balanced = pd.concat(balanced_parts, axis=0)
+    df_balanced = df_balanced.sample(frac=1, random_state=random_state).reset_index(drop=True)
+
+    y_balanced = df_balanced["label"].to_numpy()
+    X_balanced = df_balanced.drop(columns=["label"])
+
+    return X_balanced, y_balanced
 
 def main() -> None:
     root = Path(__file__).resolve().parent
@@ -173,15 +212,31 @@ def main() -> None:
     X_raw = normalize_per_dimension_per_sample(X_raw)
 
     # Window sliding
-    window_size = 100
-    stride = 50
+    window_size = 80
+    stride = 40
+
+    seed = 42
+    np.random.seed(seed)
 
     X_aug, y_aug = window_sliding_augmentation_from_last_dim(
         X_raw, window_size=window_size, stride=stride
     )
 
+    # Balance classes after window sliding beforre split
+    # X_aug, y_aug = oversample_minority_classes(X_aug, y_aug, random_state=seed)
+
     # Split windows: 3 train, 1 test
     X_train, y_train, X_test, y_test = split_windows_train_test(X_aug, y_aug)
+
+    # print("Train class distribution before oversampling:")
+    # print(pd.Series(y_train).value_counts().sort_index())
+
+    # Balance classes after window sliding
+    X_train, y_train = oversample_minority_classes(X_train, y_train, random_state=seed)
+    X_test, y_test = oversample_minority_classes(X_test, y_test, random_state=seed)
+
+    # print("Train class distribution after oversampling:")
+    # print(pd.Series(y_train).value_counts().sort_index())
 
     print("=" * 70)
     print("Dataset: AutoFab window-level from one raw file")
@@ -192,15 +247,14 @@ def main() -> None:
     print("Number of feature dimensions:", X_train.shape[1])
     print("Labels:", np.unique(np.concatenate([y_train, y_test])))
 
-    seed = 42
-    np.random.seed(seed)
 
     pipeline = make_pipeline(
-        MiniRocketMultivariateVariable(
-            pad_value_short_series=-10.0,
+        #MiniRocketMultivariateVariable(
+        MiniRocketMultivariate(
+            #pad_value_short_series=-10.0,
             random_state=seed,
             max_dilations_per_kernel=16,
-            reference_length="median",
+            #reference_length="median",
         ),
         StandardScaler(with_mean=False),
         RidgeClassifierCV(alphas=np.logspace(-3, 3, 10)),
