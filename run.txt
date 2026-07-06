@@ -2,6 +2,11 @@
 
 # Navigate to data directory and run autofab merged commands
 cd data
+
+# Remove the previous data set 
+rm -f autofab_merged_dataset.ts
+
+# Merged all the input datasets and convert it into ts format
 bash autofab_merged_commands.txt
 cd ..
 
