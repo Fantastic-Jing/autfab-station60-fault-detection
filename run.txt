@@ -1,0 +1,9 @@
+#!/bin/bash
+
+# Navigate to data directory and run autofab merged commands
+cd data
+bash autofab_merged_commands.txt
+cd ..
+
+# Run the MiniRocket analysis
+python Auto_fab_Minirocket.py
