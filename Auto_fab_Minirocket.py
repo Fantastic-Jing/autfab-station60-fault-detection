@@ -66,7 +66,7 @@ def window_sliding_augmentation_from_last_dim(X, window_size, stride=1):
     - Features: all dimensions except the last dimension.
     - Window label: the label of the last dimension in the window.
 
-    Notes:
+    Notes(optional):
     - Amplitude is a local variable inside the function.
     - Example: window_size=100, amplitude=10 -> window length randomly in [90, 110].
     """
