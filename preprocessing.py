@@ -16,11 +16,24 @@ from scipy.signal import resample_poly
 
 from config import (
     TIMESTAMP_COLS, LABEL_COL, LABEL_REMAP, VALID_LABELS,
-    TARGET_HZ, WINDOW_STEPS, STRIDE_STEPS,
+    TARGET_HZ, WINDOW_STEPS, STRIDE_STEPS, TEST_STRIDE_STEPS,
+    TEST_FILE_MARKERS, PER_CLASS_STRIDE,
 )
-from config import TEST_STRIDE_STEPS
 
 logger = logging.getLogger(__name__)
+
+# Helper: infer label class from filename
+def get_label_class_for_file(filepath: str) -> int | None:
+    """Infer the primary label class for this file from TEST_FILE_MARKERS.
+
+    Returns the label class (0-14) if found in any marker, else None.
+    """
+    filename = os.path.basename(filepath)
+    for label, markers in TEST_FILE_MARKERS.items():
+        for marker in markers:
+            if marker in filename:
+                return label
+    return None
 
 # Internal helpers
 def _estimate_source_hz(df: pd.DataFrame) -> float:
@@ -56,15 +69,18 @@ def _extract_windows(
     window_len: int,
     stride: int,
     mode: str = "train",
+    label_strategy: str = "first",
 ) -> tuple[np.ndarray, np.ndarray]:
     """
     Slide a window over the time axis.
 
-    Modes:
-      - "train": Pure Window strategy (keep windows where every timestep has same label).
-      - "test" : Keep every window. Assign label = first non-zero label inside window,
-                 or 0 if none. This produces denser test windows and does not discard
-                 mixed-label windows.
+    Parameters:
+      mode: "train" or "test"
+        - "train": Pure Window strategy (keep windows where every timestep has same label).
+        - "test" : Keep every window. Assign label based on label_strategy:
+                   - "first": first non-zero label inside window, or 0 if none
+                   - "last":  last non-zero label inside window, or 0 if none
+      label_strategy: only used in "test" mode; "first" (default) or "last"
 
     Returns:
         X: (n_windows, n_channels, window_len)
@@ -87,9 +103,15 @@ def _extract_windows(
                 continue
 
         else:  # mode == "test"
-            # Keep every window. Assign first non-zero label found, else 0.
+            # Keep every window. Assign label based on strategy.
             non_zero = window_labels[window_labels != 0]
-            label = int(non_zero[0]) if len(non_zero) > 0 else 0
+            if label_strategy == "last":
+                # Last non-zero label
+                label = int(non_zero[-1]) if len(non_zero) > 0 else 0
+            else:  # "first" (default)
+                # First non-zero label
+                label = int(non_zero[0]) if len(non_zero) > 0 else 0
+
             if label not in VALID_LABELS:
                 # If label after remap is out of valid range, skip to avoid invalid targets
                 continue
@@ -226,13 +248,15 @@ def resample_file(filepath: str) -> tuple[np.ndarray, np.ndarray, float]:
 
     return features_rs, labels_rs, src_hz
 
-def process_file(filepath: str, mode: str = "train") -> tuple[np.ndarray, np.ndarray]:
+def process_file(filepath: str, mode: str = "train", label_strategy: str = "first") -> tuple[np.ndarray, np.ndarray]:
     """
     Full preprocessing for a single CSV file.
 
     Parameters:
         filepath: path to CSV
         mode: "train" or "test". Controls windowing behaviour and stride.
+        label_strategy: "first" (default) or "last". Used in test mode to choose
+                       which non-zero label to assign to each window.
 
     Returns:
         X: (n_windows, n_channels, WINDOW_STEPS)  float32
@@ -299,8 +323,15 @@ def process_file(filepath: str, mode: str = "train") -> tuple[np.ndarray, np.nda
             dominant_label = 0  # Fallback to label 0 if no valid labels
         labels_rs = np.pad(labels_rs, (0, pad_len), constant_values=dominant_label)
 
-    # Choose stride depending on mode (train or test)
-    stride = STRIDE_STEPS if mode == "train" else TEST_STRIDE_STEPS
-    X, y = _extract_windows(features_rs, labels_rs, WINDOW_STEPS, stride, mode=mode)
-    logger.info("%s: %d windows extracted (src %.1f Hz)", filename, len(X), src_hz)
+    # Choose stride: for test mode, check if file belongs to a minority class
+    # and use per-class stride if configured
+    if mode == "train":
+        stride = STRIDE_STEPS
+    else:
+        # Try to infer the primary label class for minority class handling
+        label_class = get_label_class_for_file(filepath)
+        stride = PER_CLASS_STRIDE.get(label_class, TEST_STRIDE_STEPS)
+
+    X, y = _extract_windows(features_rs, labels_rs, WINDOW_STEPS, stride, mode=mode, label_strategy=label_strategy)
+    logger.info("%s: %d windows extracted (src %.1f Hz, stride %d)", filename, len(X), src_hz, stride)
     return X, y

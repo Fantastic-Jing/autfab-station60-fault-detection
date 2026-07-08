@@ -73,5 +73,15 @@ TEST_FILE_MARKERS = {
     1:  [],                         # Label 1 only appears in transition segments; no dedicated test file
 }
 
+# --- Class balance ---
+MAX_WINDOWS_PER_CLASS = 100  # max windows to keep per class after processing (for data-heavy classes)
+# Per-class stride: use smaller stride for minority classes to generate more windows
+PER_CLASS_STRIDE = {
+    4: 8,   # Pressure Mat
+    2: 8,   # Area Stop
+    3: 8,   # Light Curtain
+    14: 4,  # No Connection RFID (smaller stride to boost recall)
+}
+
 # --- Reproducibility ---
 RANDOM_SEED = 42

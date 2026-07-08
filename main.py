@@ -21,6 +21,21 @@ from dataset import build_dataset
 from train_eval import run_experiments
 
 
+def select_label_strategy() -> str:
+    """Prompt user to choose label strategy for test windows."""
+    print("\n" + "="*60)
+    print("Select label strategy for test set windows:")
+    print("  [1] First Fault Label  (first non-zero label in window)")
+    print("  [2] Last Fault Label   (last non-zero label in window)")
+    print("="*60)
+    while True:
+        choice = input("Enter choice (1/2): ").strip()
+        if choice in ["1", "2"]:
+            return "first" if choice == "1" else "last"
+        print("Invalid choice. Please enter 1 or 2.")
+
+
+
 def setup_logging(log_level: int = logging.INFO) -> None:
     fmt = "%(asctime)s  %(levelname)-8s  %(name)s — %(message)s"
 
@@ -64,9 +79,13 @@ def main() -> None:
     setup_logging()
     logger = logging.getLogger(__name__)
 
+    # Ask user for label strategy
+    label_strategy = select_label_strategy()
+    logger.info("Selected label strategy: %s", label_strategy)
+
     # build_dataset
-    logger.info("Building dataset ...")
-    dataset = build_dataset()
+    logger.info("Building dataset with label strategy '%s' ...", label_strategy)
+    dataset = build_dataset(label_strategy=label_strategy)
 
     logger.info(
         "Train samples: %d  |  Test samples: %d",

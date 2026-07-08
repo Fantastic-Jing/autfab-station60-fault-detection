@@ -11,7 +11,7 @@ import os
 import logging
 import numpy as np
 
-from config import DATA_DIR, TEST_FILE_MARKERS, TRAIN_STRIDE_STEPS, RANDOM_SEED, WINDOW_STEPS
+from config import DATA_DIR, TEST_FILE_MARKERS, TRAIN_STRIDE_STEPS, RANDOM_SEED, WINDOW_STEPS, MAX_WINDOWS_PER_CLASS
 from preprocessing import process_file, resample_file, extract_windows_first_fault
 
 logger = logging.getLogger(__name__)
@@ -27,6 +27,86 @@ def _is_test_file(filename: str) -> bool:
             if marker in filename:
                 return True
     return False
+
+
+def truncate_by_class(
+    X: np.ndarray,
+    y: np.ndarray,
+    max_per_class: int = MAX_WINDOWS_PER_CLASS,
+) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Randomly downsample each class to at most max_per_class samples.
+    Uses RANDOM_SEED for reproducibility.
+
+    Args:
+        X: shape (n_samples, n_channels, seq_len)
+        y: shape (n_samples,) — class labels
+        max_per_class: maximum number of samples to keep per class
+
+    Returns:
+        X_truncated, y_truncated
+    """
+    rng = np.random.default_rng(RANDOM_SEED)
+    indices_keep = []
+
+    for label in np.unique(y):
+        mask = (y == label)
+        idx = np.where(mask)[0]
+        if len(idx) > max_per_class:
+            # Downsample
+            idx_sample = rng.choice(idx, size=max_per_class, replace=False)
+        else:
+            idx_sample = idx
+        indices_keep.extend(idx_sample)
+
+    indices_keep = np.array(sorted(indices_keep))
+    return X[indices_keep], y[indices_keep]
+
+
+def augment_to_class_size(
+    X: np.ndarray,
+    y: np.ndarray,
+    target_size: int = 100,
+    noise_std: float = 0.01,
+) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Augment minority classes by copying + adding small Gaussian noise until target_size.
+    Uses RANDOM_SEED for reproducibility.
+
+    Args:
+        X: shape (n_samples, n_channels, seq_len)
+        y: shape (n_samples,) — class labels
+        target_size: target number of samples per class (default 100)
+        noise_std: standard deviation of Gaussian noise to add (default 0.01)
+
+    Returns:
+        X_augmented, y_augmented (all classes have ≥ target_size samples)
+    """
+    rng = np.random.default_rng(RANDOM_SEED)
+    X_aug, y_aug = [], []
+
+    for label in np.unique(y):
+        mask = (y == label)
+        X_class = X[mask]
+        y_class = y[mask]
+
+        # Keep original samples
+        X_aug.append(X_class)
+        y_aug.append(y_class)
+
+        # If below target_size, copy + add noise
+        if len(X_class) < target_size:
+            needed = target_size - len(X_class)
+            idx_to_copy = rng.choice(len(X_class), size=needed, replace=True)
+
+            for idx in idx_to_copy:
+                X_sample = X_class[idx:idx + 1].copy()
+                noise = rng.normal(0, noise_std, X_sample.shape)
+                X_noisy = X_sample + noise
+                X_aug.append(X_noisy)
+                y_aug.append(y_class[idx:idx + 1])
+
+    return np.vstack(X_aug), np.concatenate(y_aug)
 
 
 def split_files(data_dir: str, show_examples: int = 3) -> tuple[list[str], list[str]]:
@@ -84,7 +164,19 @@ class ChannelStandardScaler:
         # (n_channels,) -> (1, n_channels, 1)
         mean_ = self.ch_mean[np.newaxis, :, np.newaxis]
         std_ = std[np.newaxis, :, np.newaxis]
-        return (X - mean_) / std_
+        X_scaled = (X - mean_) / std_
+
+        # Post-processing: add small noise to samples with very low variance in any channel
+        # to avoid MiniROCKET's variance check failure
+        rng = np.random.default_rng(42)
+        for i in range(X_scaled.shape[0]):
+            for ch in range(X_scaled.shape[1]):
+                ch_std = np.std(X_scaled[i, ch, :])
+                if ch_std < 1e-6:
+                    # Add tiny random noise to this channel in this sample
+                    X_scaled[i, ch, :] += rng.normal(0, 1e-4, X_scaled[i, ch, :].shape)
+
+        return X_scaled
 
     def fit_transform(self, X: np.ndarray) -> np.ndarray:
         return self.fit(X).transform(X)
@@ -118,7 +210,7 @@ class ChannelStandardScaler:
 
 
 # Dataset builder
-def build_dataset(data_dir: str = DATA_DIR, show_samples: int = 3) -> dict:
+def build_dataset(data_dir: str = DATA_DIR, show_samples: int = 3, label_strategy: str = "first") -> dict:
     """
     Process CSV files, apply normalization, and return a dict with:
         X_train, y_train, X_test, y_test  (numpy arrays)
@@ -133,23 +225,28 @@ def build_dataset(data_dir: str = DATA_DIR, show_samples: int = 3) -> dict:
         # axis=2: timesteps
 
     If show_samples > 0, print a few examples after scaling to verify the output.
+
+    Parameters:
+        label_strategy: "first" (default) or "last". Used for test set windows to choose
+                       which non-zero label to assign when window has mixed labels.
     """
 
     # File-level split to prevent data leakage between adjacent windows.
     train_files, test_files = split_files(data_dir)
 
     # function: collecting processed each file and stack results into (total_windows, 44, 128).
-    def _collect(file_list: list[str], mode: str = "train") -> tuple[np.ndarray, np.ndarray]:
+    def _collect(file_list: list[str], mode: str = "train", label_strategy: str = "first") -> tuple[np.ndarray, np.ndarray]:
         """Collect processed windows from file_list.
 
         mode: "train" or "test". Passed to preprocessing to control windowing.
+        label_strategy: "first" or "last". Passed to preprocessing for test set labeling.
         """
         X_parts, y_parts = [], []
         for fp in file_list:
             try:
                 if mode == "train":
                     # First pass: original Pure Window behaviour
-                    X_pure, y_pure = process_file(fp, mode="train")
+                    X_pure, y_pure = process_file(fp, mode="train", label_strategy=label_strategy)
 
                     # Second pass: First Fault Label windows using TRAIN_STRIDE_STEPS
                     try:
@@ -161,7 +258,7 @@ def build_dataset(data_dir: str = DATA_DIR, show_samples: int = 3) -> dict:
                         logger.error("Failed first-fault extraction for %s: %s", fp, e)
                         X_ffl, y_ffl = np.empty((0,)), np.empty((0,))
 
-                    # Downsample ffl windows to match number of pure windows (1:1) if needed
+                    # Downsample ffl windows to match number of pure windows (4:1 ratio) if needed
                     n_pure = len(X_pure) if hasattr(X_pure, "shape") else 0
                     if n_pure > 0 and len(X_ffl) > n_pure:
                         rng = np.random.default_rng(RANDOM_SEED)
@@ -186,8 +283,8 @@ def build_dataset(data_dir: str = DATA_DIR, show_samples: int = 3) -> dict:
                     X_parts.append(X_combined)
                     y_parts.append(y_combined)
                 else:
-                    # Test mode: use existing process_file behaviour (First Fault Label + TEST_STRIDE_STEPS)
-                    X, y = process_file(fp, mode=mode)
+                    # Test mode: use process_file with label_strategy parameter
+                    X, y = process_file(fp, mode=mode, label_strategy=label_strategy)
                     if len(X) > 0:
                         X_parts.append(X)
                         y_parts.append(y)
@@ -201,12 +298,29 @@ def build_dataset(data_dir: str = DATA_DIR, show_samples: int = 3) -> dict:
 
     # Process files and collect all windows into final train/test arrays.
     logger.info("Processing training files ...")
-    X_train, y_train = _collect(train_files, mode="train")
+    X_train, y_train = _collect(train_files, mode="train", label_strategy=label_strategy)
     logger.info("Processing test files ...")
-    X_test, y_test = _collect(test_files, mode="test")
+    X_test, y_test = _collect(test_files, mode="test", label_strategy=label_strategy)
 
     # Fit on training data only;
     # but apply the same statistics to the test set.
+
+    # Apply per-class truncation to balance class distribution
+    logger.info("Applying per-class truncation (max %d per class) ...", MAX_WINDOWS_PER_CLASS)
+    X_train, y_train = truncate_by_class(X_train, y_train, max_per_class=MAX_WINDOWS_PER_CLASS)
+    X_test, y_test = truncate_by_class(X_test, y_test, max_per_class=MAX_WINDOWS_PER_CLASS)
+
+    # Apply data augmentation (noise) to balance minority classes
+    logger.info("Applying data augmentation to minority classes ...")
+    X_train, y_train = augment_to_class_size(X_train, y_train, target_size=MAX_WINDOWS_PER_CLASS, noise_std=0.05)
+    X_test, y_test = augment_to_class_size(X_test, y_test, target_size=MAX_WINDOWS_PER_CLASS, noise_std=0.05)
+
+    logger.info(
+        "After truncation + augmentation — train: %s  test: %s",
+        X_train.shape, X_test.shape
+    )
+
+    # Fit scaler on truncated training data only
     scaler = ChannelStandardScaler()
     X_train = scaler.fit_transform(X_train)
     X_test  = scaler.transform(X_test)
