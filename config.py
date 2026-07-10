@@ -75,7 +75,10 @@ TEST_FILE_MARKERS = {
 
 # --- Class balance ---
 LABEL_STRATEGY = "first"  # label strategy for test set: "first" or "last"
-MAX_WINDOWS_PER_CLASS = 200  # max windows to keep per class after processing (for data-heavy classes)
+MAX_WINDOWS_PER_CLASS_TRAIN = 400  # max windows to keep per class after processing (for data-heavy classes)
+MAX_WINDOWS_PER_CLASS_TEST = 200  # max windows to keep per class after processing (for data-heavy classes)
+
+
 AUGMENTATION_TARGET_SIZE = 100  # target number of samples per class after augmentation
 AUGMENTATION_NOISE_STD = 0.02  # standard deviation of Gaussian noise for augmentation
 

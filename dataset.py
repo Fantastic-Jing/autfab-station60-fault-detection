@@ -11,7 +11,9 @@ import os
 import logging
 import numpy as np
 
-from config import DATA_DIR, TEST_FILE_MARKERS, TRAIN_STRIDE_STEPS, RANDOM_SEED, WINDOW_STEPS, MAX_WINDOWS_PER_CLASS, AUGMENTATION_TARGET_SIZE, AUGMENTATION_NOISE_STD
+from config import (DATA_DIR, TEST_FILE_MARKERS, TRAIN_STRIDE_STEPS, RANDOM_SEED, WINDOW_STEPS,
+                    MAX_WINDOWS_PER_CLASS_TRAIN,MAX_WINDOWS_PER_CLASS_TEST ,
+                    AUGMENTATION_TARGET_SIZE, AUGMENTATION_NOISE_STD)
 from preprocessing import process_file, resample_file, extract_windows_first_fault
 
 logger = logging.getLogger(__name__)
@@ -32,7 +34,7 @@ def _is_test_file(filename: str) -> bool:
 def truncate_by_class(
     X: np.ndarray,
     y: np.ndarray,
-    max_per_class: int = MAX_WINDOWS_PER_CLASS,
+    max_per_class: int = MAX_WINDOWS_PER_CLASS_TEST,
 ) -> tuple[np.ndarray, np.ndarray]:
     """
     Randomly downsample each class to at most max_per_class samples.
@@ -306,14 +308,17 @@ def build_dataset(data_dir: str = DATA_DIR, show_samples: int = 3, label_strateg
     # but apply the same statistics to the test set.
 
     # Apply per-class truncation to balance class distribution
-    logger.info("Applying per-class truncation (max %d per class) ...", MAX_WINDOWS_PER_CLASS)
-    X_train, y_train = truncate_by_class(X_train, y_train, max_per_class=MAX_WINDOWS_PER_CLASS)
-    X_test, y_test = truncate_by_class(X_test, y_test, max_per_class=MAX_WINDOWS_PER_CLASS)
+    logger.info("Applying train per-class truncation (max %d per class) ...", MAX_WINDOWS_PER_CLASS_TRAIN)
+    X_train, y_train = truncate_by_class(X_train, y_train, max_per_class=MAX_WINDOWS_PER_CLASS_TRAIN)
+    logger.info("Applying test per-class truncation (max %d per class) ...", MAX_WINDOWS_PER_CLASS_TEST)
+    X_test, y_test = truncate_by_class(X_test, y_test, max_per_class=MAX_WINDOWS_PER_CLASS_TEST)
 
     # Apply data augmentation (noise) to balance minority classes
     logger.info("Applying data augmentation to minority classes ...")
-    X_train, y_train = augment_to_class_size(X_train, y_train, target_size=MAX_WINDOWS_PER_CLASS, noise_std=AUGMENTATION_NOISE_STD)
-    X_test, y_test = augment_to_class_size(X_test, y_test, target_size=MAX_WINDOWS_PER_CLASS, noise_std=AUGMENTATION_NOISE_STD)
+    X_train, y_train = augment_to_class_size(
+        X_train, y_train, target_size=MAX_WINDOWS_PER_CLASS_TRAIN, noise_std=AUGMENTATION_NOISE_STD)
+    X_test, y_test = augment_to_class_size(
+        X_test, y_test, target_size=MAX_WINDOWS_PER_CLASS_TEST, noise_std=AUGMENTATION_NOISE_STD)
 
     logger.info(
         "After truncation + augmentation — train: %s  test: %s",
