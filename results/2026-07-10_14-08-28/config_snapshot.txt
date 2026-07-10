@@ -1,0 +1,27 @@
+Config Snapshot
+========================================
+
+AUGMENTATION_NOISE_STD = 0.05
+AUGMENTATION_TARGET_SIZE = 100
+DATA_DIR = 'C:\\Users\\DemoBox\\Desktop\\H_da\\TeamProject\\DevelopmentField\\AutFabProject\\data\\raw'
+DTW_N_NEIGHBORS = 1
+DTW_WINDOW = 0.1
+LABEL_COL = 'Label'
+LABEL_NAMES = {0: 'Normal', 1: 'Transition / Not Safe', 2: 'Area Stop', 3: 'Light Curtain', 4: 'Pressure Mat', 5: 'Door Safety Switch', 6: 'Emergency Stop', 7: 'Safety Components Passivated', 8: 'Position Sensor Broken', 9: 'RFID Presence Defunct', 10: 'Shuttle Sensor Defunct', 11: 'No Connection ET200S', 12: 'No Connection Control Station', 13: 'No Connection PROFINET', 14: 'No Connection RFID'}
+LABEL_REMAP = {15: 1, 16: 1, 17: 1}
+LABEL_STRATEGY = 'first'
+MAX_WINDOWS_PER_CLASS = 200
+MINIROCKET_NUM_KERNELS = 10000
+OUTPUT_DIR = 'C:\\Users\\DemoBox\\Desktop\\H_da\\TeamProject\\DevelopmentField\\AutFabProject\\results'
+PER_CLASS_STRIDE = {4: 8, 2: 8, 3: 8, 7: 8, 8: 8, 12: 8}
+PROJECT_ROOT = 'C:\\Users\\DemoBox\\Desktop\\H_da\\TeamProject\\DevelopmentField\\AutFabProject'
+RANDOM_SEED = 42
+STRIDE_STEPS = 16
+TARGET_HZ = 64
+TEST_FILE_MARKERS = {0: ['18-59-13'], 2: ['2_4_'], 3: ['3_4_'], 4: ['4_4_'], 5: ['5_4_'], 6: ['6_4_'], 7: ['7_6_'], 8: ['8_6_'], 9: ['9_4_'], 10: ['10_4_'], 11: ['11_4_'], 12: ['12_4_'], 13: ['13_4_'], 14: ['14_4_'], 1: []}
+TEST_STRIDE_STEPS = 16
+TIMESTAMP_COLS = ['Year', 'Month', 'Day', 'Hour', 'Minute', 'Second', 'Nanosecond']
+TRAIN_STRIDE_STEPS = 16
+VALID_LABELS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
+WINDOW_STEPS = 64
+os = <module 'os' (frozen)>

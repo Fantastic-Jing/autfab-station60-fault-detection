@@ -1,0 +1,26 @@
+Station 60 Fault Detection ¡ª Results Summary
+============================================================
+
+Model: MiniROCKET
+  Accuracy       : 0.9023
+  Macro F1       : 0.9012
+  Weighted F1    : 0.9012
+  Train time     : 5.44 s
+  Infer time     : 0.853 s total
+  Infer per sample: 0.284 ms
+  Per-class F1:
+    Label  0: 0.9195
+    Label  1: 0.8125
+    Label  2: 0.9752
+    Label  3: 0.7579
+    Label  4: 0.9569
+    Label  5: 0.9643
+    Label  6: 0.8402
+    Label  7: 1.0000
+    Label  8: 0.6842
+    Label  9: 0.8701
+    Label 10: 0.9664
+    Label 11: 0.9770
+    Label 12: 0.8409
+    Label 13: 0.9557
+    Label 14: 0.9975

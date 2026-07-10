@@ -11,7 +11,7 @@ import os
 import logging
 import numpy as np
 
-from config import DATA_DIR, TEST_FILE_MARKERS, TRAIN_STRIDE_STEPS, RANDOM_SEED, WINDOW_STEPS, MAX_WINDOWS_PER_CLASS
+from config import DATA_DIR, TEST_FILE_MARKERS, TRAIN_STRIDE_STEPS, RANDOM_SEED, WINDOW_STEPS, MAX_WINDOWS_PER_CLASS, AUGMENTATION_TARGET_SIZE, AUGMENTATION_NOISE_STD
 from preprocessing import process_file, resample_file, extract_windows_first_fault
 
 logger = logging.getLogger(__name__)
@@ -66,8 +66,8 @@ def truncate_by_class(
 def augment_to_class_size(
     X: np.ndarray,
     y: np.ndarray,
-    target_size: int = 100,
-    noise_std: float = 0.01,
+    target_size: int = AUGMENTATION_TARGET_SIZE,
+    noise_std: float = AUGMENTATION_NOISE_STD,
 ) -> tuple[np.ndarray, np.ndarray]:
     """
     Augment minority classes by copying + adding small Gaussian noise until target_size.
@@ -312,8 +312,8 @@ def build_dataset(data_dir: str = DATA_DIR, show_samples: int = 3, label_strateg
 
     # Apply data augmentation (noise) to balance minority classes
     logger.info("Applying data augmentation to minority classes ...")
-    X_train, y_train = augment_to_class_size(X_train, y_train, target_size=MAX_WINDOWS_PER_CLASS, noise_std=0.05)
-    X_test, y_test = augment_to_class_size(X_test, y_test, target_size=MAX_WINDOWS_PER_CLASS, noise_std=0.05)
+    X_train, y_train = augment_to_class_size(X_train, y_train, target_size=MAX_WINDOWS_PER_CLASS, noise_std=AUGMENTATION_NOISE_STD)
+    X_test, y_test = augment_to_class_size(X_test, y_test, target_size=MAX_WINDOWS_PER_CLASS, noise_std=AUGMENTATION_NOISE_STD)
 
     logger.info(
         "After truncation + augmentation — train: %s  test: %s",

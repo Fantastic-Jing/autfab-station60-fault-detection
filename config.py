@@ -12,7 +12,7 @@ OUTPUT_DIR = os.path.join(PROJECT_ROOT, "results")        # Directory for saving
 
 # --- Sampling ---
 TARGET_HZ = 64                  # Unified resampling frequency (Hz)
-WINDOW_STEPS = 128              # Window length in samples at TARGET_HZ (= 2 seconds)
+WINDOW_STEPS = 64              # Window length in samples at TARGET_HZ (= 2 seconds)
 STRIDE_STEPS = 16               # Slide stride (= 1 second, 50% overlap)
 
 # --- Test stride (use a smaller stride on the test set for denser evaluation)
@@ -74,14 +74,30 @@ TEST_FILE_MARKERS = {
 }
 
 # --- Class balance ---
-MAX_WINDOWS_PER_CLASS = 100  # max windows to keep per class after processing (for data-heavy classes)
+LABEL_STRATEGY = "first"  # label strategy for test set: "first" or "last"
+MAX_WINDOWS_PER_CLASS = 200  # max windows to keep per class after processing (for data-heavy classes)
+AUGMENTATION_TARGET_SIZE = 100  # target number of samples per class after augmentation
+AUGMENTATION_NOISE_STD = 0.02  # standard deviation of Gaussian noise for augmentation
+
 # Per-class stride: use smaller stride for minority classes to generate more windows
 PER_CLASS_STRIDE = {
-    4: 8,   # Pressure Mat
-    2: 8,   # Area Stop
-    3: 8,   # Light Curtain
-    14: 4,  # No Connection RFID (smaller stride to boost recall)
+    2: 2,   # Area Stop
+    3: 1,   # Light Curtain
+    4: 1,   # Pressure Mat
+    5: 1,   # Door Safety Switch
+    6: 1,   # Emergency Stop
+    7: 8,   # Safety Components Passivated
+    8: 8,   # Position Sensor Broken
+    9: 4,   # RFID Presence Defunct
+    11: 8,  # No Connection ET200S
+    12: 4,  # No Connection Control Station
+    # 14: 8,  # No Connection RFID (smaller stride to boost recall)
 }
+
+# --- Model hyperparameters ---
+MINIROCKET_NUM_KERNELS = 10_000  # number of random kernels for MiniRocket
+DTW_N_NEIGHBORS = 1  # k for k-NN with DTW
+DTW_WINDOW = 0.1  # Sakoe-Chiba band width (fraction of series length)
 
 # --- Reproducibility ---
 RANDOM_SEED = 42

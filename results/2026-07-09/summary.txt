@@ -1,4 +1,4 @@
-Station 60 Fault Detection ¡ª Results Summary
+Station 60 Fault Detection Â¡Âª Results Summary
 ============================================================
 
 Model: MiniROCKET

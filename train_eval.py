@@ -22,7 +22,7 @@ from sklearn.metrics import (
 from aeon.classification.convolution_based import MiniRocketClassifier
 from aeon.classification.distance_based import KNeighborsTimeSeriesClassifier
 
-from config import LABEL_NAMES, OUTPUT_DIR, RANDOM_SEED
+from config import LABEL_NAMES, OUTPUT_DIR, RANDOM_SEED, MINIROCKET_NUM_KERNELS, DTW_N_NEIGHBORS, DTW_WINDOW
 import os
 
 logger = logging.getLogger(__name__)
@@ -34,13 +34,13 @@ logger = logging.getLogger(__name__)
 
 def build_minirocket(n_jobs: int = -1) -> MiniRocketClassifier:
     return MiniRocketClassifier(
-        n_kernels=10_000,
+        n_kernels=MINIROCKET_NUM_KERNELS,
         random_state=RANDOM_SEED,
         n_jobs=n_jobs,
     )
 
 
-def build_dtw_knn(n_neighbors: int = 1, window: float = 0.1) -> KNeighborsTimeSeriesClassifier:
+def build_dtw_knn(n_neighbors: int = DTW_N_NEIGHBORS, window: float = DTW_WINDOW) -> KNeighborsTimeSeriesClassifier:
     """
     1-NN with DTW distance and a Sakoe-Chiba band (window fraction of series length).
     n_jobs is not supported for DTW-kNN in aeon; inference is inherently sequential.
@@ -54,6 +54,31 @@ def build_dtw_knn(n_neighbors: int = 1, window: float = 0.1) -> KNeighborsTimeSe
 
 
 # Train + evaluate
+def _format_confusion_matrix(cm: np.ndarray, class_names: list[str]) -> str:
+    """Print confusion matrix with numeric indices for readability."""
+    n = len(class_names)
+    col_w = 6
+
+    # Header: 0, 1, 2 ... as column indices
+    header_nums = " ".join(f"{i:>{col_w}}" for i in range(n))
+    row_label_w = max(len(n_) for n_ in class_names)
+    header = " " * (row_label_w + 2) + header_nums
+    sep = " " * (row_label_w + 2) + "-" * (n * (col_w + 1) - 1)
+
+    # Each row: full class name + index + counts
+    rows = [header, sep]
+    for i, row in enumerate(cm):
+        label = f"{class_names[i]:>{row_label_w}}"
+        values = " ".join(f"{v:>{col_w}}" for v in row)
+        rows.append(f"{label}  {values}")
+
+    # Legend: index -> class name
+    rows.append("")
+    rows.append("Predicted class index legend:")
+    for i, name in enumerate(class_names):
+        rows.append(f"  {i:>2}: {name}")
+
+    return "\n".join(rows)
 
 
 def train_and_evaluate(
@@ -102,6 +127,8 @@ def train_and_evaluate(
     logger.info("[%s] Full classification report:\n%s", clf_name,
                 classification_report(y_test, y_pred, labels=present_labels,
                                       target_names=class_names, zero_division=0))
+    logger.info("[%s] Confusion matrix:\n%s", clf_name,
+                _format_confusion_matrix(cm, class_names))
 
     return {
         "clf_name":              clf_name,
@@ -119,28 +146,37 @@ def train_and_evaluate(
 
 
 # Visualisation helpers
-
 def plot_confusion_matrix(results: dict, save_dir: str = OUTPUT_DIR) -> None:
     os.makedirs(save_dir, exist_ok=True)
-    cm   = results["confusion_matrix"]
+    cm           = results["confusion_matrix"]
+    class_names  = results["class_names"]
+    n            = len(class_names)
+
+    # Use numeric indices as tick labels
     disp = ConfusionMatrixDisplay(
         confusion_matrix=cm,
-        display_labels=results["class_names"],
+        display_labels=list(range(n)),
     )
     fig, ax = plt.subplots(figsize=(10, 8))
-    disp.plot(ax=ax, xticks_rotation=45, colorbar=True)
+    disp.plot(ax=ax, colorbar=True)
     ax.set_title(f"Confusion Matrix — {results['clf_name']}")
-    fig.tight_layout()
 
+    # Add legend below the plot
+    legend_lines = [f"{i}: {name}" for i, name in enumerate(class_names)]
+    legend_text  = "   ".join(legend_lines[:8]) + "\n" + "   ".join(legend_lines[8:])
+    fig.text(0.01, 0.01, legend_text, fontsize=7, verticalalignment="bottom",
+             family="monospace")
+
+    fig.tight_layout(rect=[0, 0.08, 1, 1])   # leave space at bottom for legend
     out_path = os.path.join(save_dir, f"cm_{results['clf_name'].replace(' ', '_')}.png")
     fig.savefig(out_path, dpi=150)
     plt.close(fig)
     logger.info("Confusion matrix saved to %s", out_path)
 
 
-def plot_metric_comparison(all_results: list[dict], save_dir: str = OUTPUT_DIR) -> None:
+def plot_metric_comparison(all_results: list[dict], run_dir: str) -> None:
     """Bar chart comparing key metrics across all evaluated classifiers."""
-    os.makedirs(save_dir, exist_ok=True)
+    os.makedirs(run_dir, exist_ok=True)
 
     names        = [r["clf_name"]      for r in all_results]
     accuracy     = [r["accuracy"]      for r in all_results]
@@ -177,7 +213,7 @@ def plot_metric_comparison(all_results: list[dict], save_dir: str = OUTPUT_DIR) 
     fig.suptitle("Model Comparison — Station 60 Fault Detection")
     fig.tight_layout()
 
-    out_path = os.path.join(save_dir, "model_comparison.png")
+    out_path = os.path.join(run_dir, "model_comparison.png")
     fig.savefig(out_path, dpi=150)
     plt.close(fig)
     logger.info("Comparison chart saved to %s", out_path)
@@ -187,9 +223,14 @@ def plot_metric_comparison(all_results: list[dict], save_dir: str = OUTPUT_DIR) 
 # Main entry point
 
 
-def run_experiments(dataset: dict) -> list[dict]:
+def run_experiments(dataset: dict, run_dir: str) -> list[dict]:
     """
     Run MiniROCKET and DTW+kNN on the provided dataset dict.
+    
+    Args:
+        dataset: dict with X_train, y_train, X_test, y_test
+        run_dir: directory to save outputs
+    
     Returns a list of result dicts (one per classifier).
     """
     X_train = dataset["X_train"]
@@ -205,8 +246,8 @@ def run_experiments(dataset: dict) -> list[dict]:
     all_results = []
     for clf, name in classifiers:
         results = train_and_evaluate(clf, name, X_train, y_train, X_test, y_test)
-        plot_confusion_matrix(results)
+        plot_confusion_matrix(results, run_dir)
         all_results.append(results)
 
-    plot_metric_comparison(all_results)
+    # plot_metric_comparison(all_results, run_dir)
     return all_results

@@ -13,44 +13,29 @@ Outputs (written to OUTPUT_DIR):
 
 import logging
 import os
-import json
-import numpy as np
+from datetime import datetime
 
-from config import OUTPUT_DIR
+from config import OUTPUT_DIR, LABEL_STRATEGY
 from dataset import build_dataset
 from train_eval import run_experiments
 
 
-def select_label_strategy() -> str:
-    """Prompt user to choose label strategy for test windows."""
-    print("\n" + "="*60)
-    print("Select label strategy for test set windows:")
-    print("  [1] First Fault Label  (first non-zero label in window)")
-    print("  [2] Last Fault Label   (last non-zero label in window)")
-    print("="*60)
-    while True:
-        choice = input("Enter choice (1/2): ").strip()
-        if choice in ["1", "2"]:
-            return "first" if choice == "1" else "last"
-        print("Invalid choice. Please enter 1 or 2.")
 
 
-
-def setup_logging(log_level: int = logging.INFO) -> None:
+def setup_logging(run_dir: str, log_level: int = logging.INFO) -> None:
     fmt = "%(asctime)s  %(levelname)-8s  %(name)s — %(message)s"
 
     # Log to both console and file simultaneously
     logging.basicConfig(level=log_level, format=fmt, datefmt="%H:%M:%S")
 
-    file_handler = logging.FileHandler("results/run.log", mode="w", encoding="utf-8")
+    file_handler = logging.FileHandler(os.path.join(run_dir, "run.log"), mode="w", encoding="utf-8")
     file_handler.setFormatter(logging.Formatter(fmt, datefmt="%H:%M:%S"))
     logging.getLogger().addHandler(file_handler)
 
 
-def save_summary(all_results: list[dict], save_dir: str = OUTPUT_DIR) -> None:
+def save_summary(all_results: list[dict], run_dir: str) -> None:
     """Write a human-readable text summary of all metric results."""
-    os.makedirs(save_dir, exist_ok=True)
-    out_path = os.path.join(save_dir, "results_summary.txt")
+    out_path = os.path.join(run_dir, "results_summary.txt")
 
     lines = ["Station 60 Fault Detection — Results Summary", "=" * 60, ""]
     for r in all_results:
@@ -71,21 +56,39 @@ def save_summary(all_results: list[dict], save_dir: str = OUTPUT_DIR) -> None:
 
     logging.getLogger(__name__).info("Summary written to %s", out_path)
 
+def save_config_snapshot(run_dir: str) -> None:
+    """Save all current config parameters to a text file for reproducibility."""
+    import config as cfg
+    out_path = os.path.join(run_dir, "config_snapshot.txt")
+    lines = ["Config Snapshot", "=" * 40, ""]
+    for key in dir(cfg):
+        if key.startswith("_"):
+            continue
+        val = getattr(cfg, key)
+        if callable(val):
+            continue
+        lines.append(f"{key} = {val!r}")
+    with open(out_path, "w", encoding="utf-8") as f:
+        f.write("\n".join(lines))
+    logging.info("Config snapshot saved to %s", out_path)
+
 
 def main() -> None:
-
-    # logger
+    # Create timestamped run directory
     os.makedirs(OUTPUT_DIR, exist_ok=True)
-    setup_logging()
+    run_id = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    run_dir = os.path.join(OUTPUT_DIR, run_id)
+    os.makedirs(run_dir, exist_ok=True)
+
+    # Setup logging
+    setup_logging(run_dir)
     logger = logging.getLogger(__name__)
 
-    # Ask user for label strategy
-    label_strategy = select_label_strategy()
-    logger.info("Selected label strategy: %s", label_strategy)
+    logger.info("Using label strategy: %s", LABEL_STRATEGY)
 
     # build_dataset
-    logger.info("Building dataset with label strategy '%s' ...", label_strategy)
-    dataset = build_dataset(label_strategy=label_strategy)
+    logger.info("Building dataset with label strategy '%s' ...", LABEL_STRATEGY)
+    dataset = build_dataset(label_strategy=LABEL_STRATEGY)
 
     logger.info(
         "Train samples: %d  |  Test samples: %d",
@@ -93,10 +96,13 @@ def main() -> None:
     )
 
     logger.info("Running ...")
-    all_results = run_experiments(dataset)
+    all_results = run_experiments(dataset, run_dir)
 
-    save_summary(all_results)
-    logger.info("Done. Results saved to '%s/'.", OUTPUT_DIR)
+    save_config_snapshot(run_dir)
+    logger.info("Done. Config saved to '%s/'.", run_dir)
+
+    save_summary(all_results, run_dir)
+    logger.info("Done. Results saved to '%s/'.", run_dir)
 
 
 if __name__ == "__main__":
