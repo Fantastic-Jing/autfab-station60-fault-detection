@@ -282,3 +282,6 @@ data /
 14_3_timeSeriesStation60_2025-04-28_16-43-48.CSV
 14_4_timeSeriesStation60_2025-04-28_16-51-41.CSV
 autofab_merged_dataset.ts
+
+#backup
+.git.backup
