@@ -2,6 +2,15 @@
 
 A machine learning pipeline for reactive fault detection on the **AutFab smart factory Station 60 pneumatic press**. When a fault occurs, the system classifies the fault type from multivariate sensor time series, helping operators identify the problem quickly.
 
+## Implementations
+
+The two independent project implementations are kept in separate modules:
+
+- `modules/Aeon-Implementation/` — the Aeon-based implementation
+- `modules/Sktime-Implement/` — the sktime-based implementation
+
+Each module has its own source files, dependencies, data utilities, and results. Run commands from the relevant module directory.
+
 
 ---
 

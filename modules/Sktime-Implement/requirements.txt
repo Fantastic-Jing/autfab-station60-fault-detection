@@ -1,0 +1,36 @@
+# ============================================================================
+# Autofab Station 60 Fault Detection - Requirements
+# ============================================================================
+# Includes all runtime Python libraries needed to run the project source.
+# These cover the project imports plus required dependencies of sktime,
+# scikit-learn, matplotlib, and pandas.
+# ============================================================================
+
+# Core numerical and scientific libraries
+numpy==2.3.5
+pandas==2.3.3
+scipy==1.17.1
+
+# Time series and classification libraries
+sktime==0.40.1
+scikit-base==0.13.2
+scikit-learn==1.7.2
+numba==0.63.1
+llvmlite==0.46.0
+
+# Plotting and visualization
+matplotlib==3.10.9
+contourpy==1.3.3
+cycler==0.12.1
+fonttools==4.63.0
+kiwisolver==1.5.0
+pillow==12.2.0
+pyparsing==3.3.2
+python-dateutil==2.9.0.post0
+pytz==2026.2
+tzdata==2026.2
+
+# Utilities required by sklearn/sktime
+joblib==1.5.3
+threadpoolctl==3.6.0
+packaging==26.2

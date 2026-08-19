@@ -1,0 +1,43 @@
+======================================================================
+Dataset: AutoFab time series data
+======================================================================
+Total windows: 2766
+Train samples: 6930
+Test samples: 2358
+Number of feature dimensions: 51
+Labels: [ 0.  1.  2.  3.  4.  5.  6.  7.  8.  9. 10. 11. 12. 13. 14. 15. 16. 17.]
+
+Confusion Matrix (Actual vs Predicted):
+(Rows = Actual, Columns = Predicted)
+     0    1    2    3    4    5   6    7    8    9    10   11   12   13   14   15   16   17
+0   130    0    0    0    0    0   0    0    0    1    0    0    0    0    0    0    0    0
+1     0  123    0    3    0    5   0    0    0    0    0    0    0    0    0    0    0    0
+2     0    0  131    0    0    0   0    0    0    0    0    0    0    0    0    0    0    0
+3     0    0   18  113    0    0   0    0    0    0    0    0    0    0    0    0    0    0
+4     0    0    0    0  131    0   0    0    0    0    0    0    0    0    0    0    0    0
+5     0    0   20    0    0  111   0    0    0    0    0    0    0    0    0    0    0    0
+6     0   24    0    0    0   26  81    0    0    0    0    0    0    0    0    0    0    0
+7     0    1    0    0    0    0   0  130    0    0    0    0    0    0    0    0    0    0
+8     0    0    0    0    0    0   0    0  131    0    0    0    0    0    0    0    0    0
+9     0    0    0    0    0    0   0    0    0  131    0    0    0    0    0    0    0    0
+10    0    0    0    0    0    0   0    0    0    0  131    0    0    0    0    0    0    0
+11    2    0    0    0    0    0   0    0    0    0    0  116    0   13    0    0    0    0
+12    0    0    0    0    0    0   0    0    0    0    0    0  131    0    0    0    0    0
+13    0    0    0    0    0    0   0    0    0    0    0    0    0  131    0    0    0    0
+14    0    0    0    0    0    0   0    0    0    0    0    0    0    0  131    0    0    0
+15    0   13    0    0    0    0   0    0    0    0    0    0    0    0    0  118    0    0
+16    0    0    0    0    0    0   0    0    0    0    0    0    0    0    0    0  131    0
+17    0    0    0    0    0    0   0    0    0    0    0    0    0    0    0    0    0  131
+
+Timing details:
+Batch inference time       : 1.3942 s
+Mean per-sample time       : 15.6147 ms
+Median per-sample time     : 15.6231 ms
+Max per-sample time        : 31.5937 ms
+
+Metrics:
+   Dataset  Seed  Total Training Time  Mean Per-sample Inference Time  Accuracy  Weighted F1
+0  AutoFab    42            24.572608                        0.015615  0.946565     0.946048
+
+Best alpha selected by RidgeClassifierCV:
+46.41588833612773
